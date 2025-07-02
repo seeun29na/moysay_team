@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>firstpage - 모이새 약속 조율</title>
+
+  <!-- FullCalendar CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet"/>
+
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; font-family: Arial, sans-serif; }
+    body {
+      background: #f4ebc5;
+      display: flex;
+      justify-content: center;
+    }
+    #calendar-container {
+      width: 90vw;
+      max-width: 1000px;
+      margin: 2rem auto;
+    }
+    .title-bar {
+      background: #bca369;
+      color: white;
+      padding: 1rem;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    #calendar {
+      background: #d2bb87;
+      border-radius: 8px;
+      padding: 1rem;
+      height: 600px;
+    }
+    .fc .fc-toolbar-title { font-size: 1.5rem; }
+    .fc button {
+      background: #bca369;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+    .fc-daygrid-day.fc-past {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+    .fc-daygrid-day-selected {
+      background: #ff7f50 !important;
+      color: white !important;
+    }
+    #nextBtn {
+      display: block;
+      margin: 1.5rem auto 0;
+      padding: .8rem 2rem;
+      background: #bca369;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="calendar-container">
+    <div class="title-bar">만날 날짜를 정해주세요!</div>
+    <div id="calendar"></div>
+    <button id="nextBtn">NEXT</button>
+  </div>
+
+  <!-- FullCalendar 번들 (core + daygrid) -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const { Calendar } = FullCalendar;
+      let selectedDates = [];
+
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ko',
+        showNonCurrentDates: false,
+        fixedWeekCount: false,
+        validRange: { start: new Date().toISOString().split('T')[0] },
+        headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+        dateClick: info => {
+          const ds = info.dateStr;
+          const idx = selectedDates.indexOf(ds);
+          if (idx !== -1) {
+            selectedDates.splice(idx, 1);
+            info.dayEl.classList.remove('fc-daygrid-day-selected');
+            return;
+          }
+          if (selectedDates.length >= 3) {
+            alert('최대 3개까지만 선택 가능합니다.');
+            return;
+          }
+          selectedDates.push(ds);
+          info.dayEl.classList.add('fc-daygrid-day-selected');
+        }
+      });
+
+      calendar.render();
+
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        if (selectedDates.length === 0) {
+          alert('하나 이상의 날짜를 선택해주세요.');
+          return;
+        }
+        // TODO: 필요하다면 selectedDates를 localStorage 등에 저장
+        window.location.href = 'secondpage.html';
+      });
+    });
+  </script>
+</body>
+</html>
