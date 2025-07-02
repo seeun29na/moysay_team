@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>secondpage - 모이새 일정 만들기</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Arial', sans-serif; }
+    body { margin: 0; background-color: #f4ebc5; padding: 2rem; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .title {
+      background-color: #a7904d;
+      color: white;
+      font-size: 2rem;
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+    }
+    .form-group { margin-bottom: 1.5rem; }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      background-color: #a7904d;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      background-color: #bda76c;
+      color: #3e2f1c;
+    }
+    .next-btn {
+      display: block;
+      margin: 2rem auto 0;
+      padding: 0.75rem 2rem;
+      font-size: 1rem;
+      background-color: #a7904d;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">일정 만들기!</div>
+
+    <div class="form-group">
+      <label for="name">1. 모임 이름을 입력하세요!</label>
+      <input type="text" id="name" placeholder="예: 친목 소모임" />
+    </div>
+
+    <div class="form-group">
+      <label for="location">2. 모임의 장소를 입력하세요! (선택)</label>
+      <input type="text" id="location" placeholder="예: 서울숲 카페" />
+    </div>
+
+    <div class="form-group">
+      <label for="link">3. 모임의 장소의 링크를 입력하세요! (선택)</label>
+      <input type="text" id="link" placeholder="예: https://naver.me/abcd1234" />
+    </div>
+
+    <div class="form-group">
+      <label for="time">4. 만남 가능 시간을 설정하세요! (ex. 9~6)</label>
+      <input type="text" id="time" placeholder="예: 10~17" />
+    </div>
+
+    <button class="next-btn">NEXT</button>
+  </div>
+</body>
+</html>
