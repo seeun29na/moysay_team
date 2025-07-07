@@ -118,11 +118,21 @@ header h1 {
   border-radius: 0.4rem;
 }
 
-.schedule {
+/* .schedule {
   display: flex;
   gap: 2rem;
   margin-top: 3rem;
+} */
+
+
+.schedule {
+  display: flex;
+  justify-content: center;  /* 가운데 정렬 */
+  gap: 2rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;          /* 좁으면 줄바꿈 */
 }
+
 
 .day-column {
   background: #e5d2a2;

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오눈고 한 번 모이자~</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>오눈고 한 번 모이자~</h1>
+    </header>
+
+    <section class="input-section">
+      <form id="availabilityForm">
+        <input type="text" id="name" placeholder="이름을 입력하세요" required />
+        <input type="text" id="time" placeholder="ex. 16:30~21:00" required />
+        <select id="date">
+          <option value="2024-05-22">5/22</option>
+          <option value="2024-05-23">5/23</option>
+          <option value="2024-05-24">5/24</option>
+        </select>
+        <select id="certainty">
+          <option value="definite">확실함</option>
+          <option value="maybe">가능성 있음</option>
+        </select>
+        <button type="submit">시간 등록</button>
+      </form>
+    </section>
+
+    <section class="schedule">
+      <div class="day-column" data-date="2024-05-22">
+        <div class="day-label">☀️ 5/22</div>
+        <div class="time-slots"></div>
+      </div>
+      <div class="day-column" data-date="2024-05-23">
+        <div class="day-label">🌧️ 5/23</div>
+        <div class="time-slots"></div>
+      </div>
+      <div class="day-column" data-date="2024-05-24">
+        <div class="day-label">🌧️ 5/24</div>
+        <div class="time-slots"></div>
+      </div>
+    </section>
+
+    <!-- ↑↑ 기존 스케줄 영역 끝나는 지점↑↑ -->
+
+    <!-- ↓↓ 여기부터 “모임 정보 표시” 영역 ↓↓ -->
+    <section id="meeting-info"
+            style="
+              position: fixed;
+              bottom: 1rem;
+              right: 1rem;
+              width: 280px;
+              background: #fff;
+              border: 1px solid #ccc;
+              border-radius: 8px;
+              padding: 1rem;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+              z-index: 1000;
+            ">
+      <h2 id="meeting-name" style="margin-bottom:0.5rem;"></h2>
+      <p id="meeting-location" style="margin-bottom:0.5rem;"></p>
+      <a id="meeting-link" href="#" target="_blank"></a>
+    </section>
+    <!-- ↑↑ “모임 정보 표시” 영역 끝 ↑↑ -->
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
