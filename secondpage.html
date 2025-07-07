@@ -67,11 +67,25 @@
     </div>
 
     <div class="form-group">
-      <label for="time">4. 만남 가능 시간을 설정하세요! (ex. 9~6)</label>
+      <label for="time">4. 만남 가능 시간을 설정하세요! (ex. 10~17)</label>
       <input type="text" id="time" placeholder="예: 10~17" />
     </div>
 
-    <button class="next-btn">NEXT</button>
+    <button class="next-btn" onclick="saveAndRedirect()">NEXT</button>
   </div>
+
+  <script>
+    function saveAndRedirect() {
+      const data = {
+        name: document.getElementById('name').value,
+        location: document.getElementById('location').value,
+        link: document.getElementById('link').value,
+        time: document.getElementById('time').value
+      };
+      localStorage.setItem('meetingInfo', JSON.stringify(data));
+      // secondpage.html과 같은 폴더 안에 frontend 폴더가 있을 때
+      window.location.href = './frontend/index.html';
+    }
+  </script>
 </body>
 </html>
