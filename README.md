@@ -1,4 +1,4 @@
-# 🐤 모이새 (MOYSAy)
+# 🐤 모이새 (MOYSAY)
 
 > 여러 명이 약속 시간을 쉽게 조율할 수 있는 한국형 일정 조율 웹서비스  
 > Inspired by *When2meet*, improved for Korean users 🇰🇷
