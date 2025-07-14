@@ -104,13 +104,17 @@
 
       calendar.render();
 
+      // 기존 코드
       document.getElementById('nextBtn').addEventListener('click', () => {
         if (selectedDates.length === 0) {
           alert('하나 이상의 날짜를 선택해주세요.');
           return;
         }
-        // TODO: 필요하다면 selectedDates를 localStorage 등에 저장
-        window.location.href = 'secondpage.html';
+        
+        localStorage.setItem('selectedDates', JSON.stringify(selectedDates));
+
+        // 기존 리다이렉트
+        window.location.href = './second_page.html';
       });
     });
   </script>
