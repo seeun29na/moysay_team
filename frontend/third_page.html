@@ -36,7 +36,7 @@
           </div>
         </div>
 
-        <!-- 4) 날짜 선택 (firstpage에서 고른 날짜들만 표시) -->
+        <!-- 4) 날짜 선택 -->
         <select id="date" required></select>
 
         <!-- 5) 확실성 -->
@@ -65,6 +65,31 @@
     </section>
   </div>
 
+  <!-- Firebase SDK 및 설정 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiVW_fvG5hXmt_6aMeDRwXVU19ByRO1iA",
+      authDomain: "moysay-d2606.firebaseapp.com",
+      databaseURL: "https://moysay-d2606-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "moysay-d2606",
+      storageBucket: "moysay-d2606.appspot.com",
+      messagingSenderId: "843998694219",
+      appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.firebaseDB = db;
+    window.firebaseRef = ref;
+    window.firebasePush = push;
+    window.firebaseOnValue = onValue;
+  </script>
+
+  <!-- 기존 스크립트: Firebase 연동 및 UI 업데이트 포함 -->
   <script src="script.js"></script>
 </body>
 </html>
