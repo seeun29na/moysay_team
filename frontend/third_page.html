@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>오눈고 한 번 모이자~</title>
+  <title>thirdpage - 모이새 약속 잡기</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>오눈고 한 번 모이자~</h1>
+      <h1 id="meeting-title"></h1>
     </header>
 
     <section class="input-section">
@@ -35,7 +35,7 @@
           </div>
         </div>
 
-        <!-- 4) 날짜 선택 (firstpage에서 고른 날짜들만 표시) -->
+        <!-- 4) 날짜 선택 -->
         <select id="date" required></select>
 
         <!-- 5) 확실성 -->
@@ -79,18 +79,16 @@
       appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 전역으로 등록하여 script.js에서 사용
     window.firebaseDB = db;
     window.firebaseRef = ref;
     window.firebasePush = push;
     window.firebaseOnValue = onValue;
   </script>
 
-  <!-- 기존 스크립트: Firebase 연동된 로직 포함 -->
+  <!-- 기존 스크립트: Firebase 연동 및 UI 업데이트 포함 -->
   <script src="script.js"></script>
 </body>
 </html>
