@@ -1,149 +1,89 @@
-// document.addEventListener('DOMContentLoaded', () => {
-//   const stored = JSON.parse(localStorage.getItem('selectedDates')) || [];
-//   const dateSelect = document.getElementById('date');
-//   if (!dateSelect || stored.length === 0) return;
+const toMinutes = (timeStr) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+};
 
-//   // 기존 <select> 옵션 초기화
-//   dateSelect.innerHTML = '';
+const updateIntensity = (groupDiv, count) => {
+  groupDiv.classList.remove("intensity-2", "intensity-3", "intensity-4", "intensity-5");
+  if (count >= 29) groupDiv.classList.add("intensity-5");
+  else if (count >= 20) groupDiv.classList.add("intensity-4");
+  else if (count >= 10) groupDiv.classList.add("intensity-3");
+  else if (count >= 5) groupDiv.classList.add("intensity-2");
+};
 
-//   // 저장된 날짜만큼 <option> 생성
-//   stored.forEach(ds => {
-//     const [year, month, day] = ds.split('-');
-//     const opt = document.createElement('option');
-//     opt.value = ds;
-//     opt.textContent = `${parseInt(month)}/${parseInt(day)}`;
-//     dateSelect.appendChild(opt);
-//   });
-// });
-
-
-// // 1) 타임슬롯 생성 로직 (기존 코드)
-// const generateSlots = () => {
-//   const startHour = 9, endHour = 22;
-//   document.querySelectorAll(".time-slots").forEach(container => {
-//     for (let h = startHour; h < endHour; h++) {
-//       container.appendChild(createSlot(`${String(h).padStart(2,'0')}:00`));
-//       container.appendChild(createSlot(`${String(h).padStart(2,'0')}:30`));
-//     }
-//   });
-// };
-
-// const createSlot = (time) => {
-//   const div = document.createElement("div");
-//   div.classList.add("slot");
-//   div.dataset.time = time;
-//   div.dataset.tooltip = "";
-//   div.dataset.count = 0;
-//   div.innerHTML = `<span>${time}</span>`;
-//   return div;
-// };
-
-// const updateIntensity = (slot) => {
-//   const count = parseInt(slot.dataset.count);
-//   slot.classList.remove("intensity-2","intensity-3","intensity-4","intensity-5");
-//   if      (count>=5) slot.classList.add("intensity-5");
-//   else if (count===4) slot.classList.add("intensity-4");
-//   else if (count===3) slot.classList.add("intensity-3");
-//   else if (count===2) slot.classList.add("intensity-2");
-// };
-
-// // 2) 사용자가 직접 시간 등록할 때의 기존 로직
-// document.getElementById("availabilityForm").addEventListener("submit", (e) => {
-//   e.preventDefault();
-//   const name = document.getElementById("name").value.trim();
-//   const timeRange = document.getElementById("time").value.trim();
-//   const date = document.getElementById("date").value;
-//   const certainty = document.getElementById("certainty").value;
-//   const [start,end] = timeRange.split("~").map(t => t.trim());
-//   const slots = document.querySelector(`.day-column[data-date="${date}"] .time-slots`).children;
-//   let marking = false;
-//   for (let slot of slots) {
-//     if (slot.dataset.time === start) marking = true;
-//     if (marking) {
-//       const cls = certainty==="definite" ? "busy-definite" : "busy-maybe";
-//       slot.classList.add(cls);
-//       slot.dataset.tooltip = slot.dataset.tooltip ? `${slot.dataset.tooltip}, ${name}` : name;
-//       slot.dataset.count = parseInt(slot.dataset.count)+1;
-//       updateIntensity(slot);
-//     }
-//     if (slot.dataset.time === end) break;
-//   }
-//   e.target.reset();
-// });
-
-// // 3) 슬롯 생성
-// generateSlots();
-
-// // 4) secondpage에서 넘어온 meetingInfo를 표시
-// document.addEventListener('DOMContentLoaded', () => {
-//   const info = JSON.parse(localStorage.getItem('meetingInfo'));
-//   if (!info) return;
-
-//   // 모임 이름
-//   document.getElementById('meeting-name').textContent = info.name || '';
-
-//   // 장소
-//   document.getElementById('meeting-location').textContent =
-//     info.location ? `장소: ${info.location}` : '';
-
-//   // 링크
-//   if (info.link) {
-//     const a = document.getElementById('meeting-link');
-//     a.textContent = info.link;
-//     a.href = info.link;
-//   }
-
-//   // 더 이상 필요 없으면 주석 해제
-//   // localStorage.removeItem('meetingInfo');
-// });
-
-
-
-
-// 1) 슬롯 생성 유틸
 const generateSlots = () => {
-  const startHour = 9, endHour = 22;
-  document.querySelectorAll(".time-slots").forEach(container => {
+  const startHour = 9;
+  const endHour = 22;
+  const groupInterval = 30; // 30분 단위
+
+  document.querySelectorAll(".time-slots").forEach((container) => {
     for (let h = startHour; h < endHour; h++) {
-      container.appendChild(createSlot(`${String(h).padStart(2,'0')}:00`));
-      container.appendChild(createSlot(`${String(h).padStart(2,'0')}:30`));
+      for (let m = 0; m < 60; m += groupInterval) {
+        const groupDiv = document.createElement("div");
+        groupDiv.classList.add("slot-group");
+        groupDiv.dataset.count = 0;
+
+        const baseTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        groupDiv.dataset.start = baseTime;
+
+        for (let i = 0; i < groupInterval; i++) {
+          const minutes = m + i;
+          const hh = String(h + Math.floor(minutes / 60)).padStart(2, '0');
+          const mm = String(minutes % 60).padStart(2, '0');
+          const time = `${hh}:${mm}`;
+
+          const minuteSlot = document.createElement("div");
+          minuteSlot.classList.add("minute-slot");
+          minuteSlot.dataset.time = time;
+          minuteSlot.dataset.count = 0;
+          minuteSlot.dataset.tooltip = "";
+          groupDiv.appendChild(minuteSlot);
+        }
+
+        const label = document.createElement("span");
+        label.classList.add("time-label");
+        label.textContent = baseTime;
+        groupDiv.appendChild(label);
+
+        container.appendChild(groupDiv);
+      }
     }
   });
 };
-const createSlot = time => {
-  const div = document.createElement("div");
-  div.classList.add("slot");
-  div.dataset.time = time;
-  div.dataset.tooltip = "";
-  div.dataset.count = 0;
-  div.innerHTML = `<span>${time}</span>`;
-  return div;
-};
-const updateIntensity = slot => {
-  const c = parseInt(slot.dataset.count);
-  slot.classList.remove("intensity-2","intensity-3","intensity-4","intensity-5");
-  if      (c>=5) slot.classList.add("intensity-5");
-  else if (c===4) slot.classList.add("intensity-4");
-  else if (c===3) slot.classList.add("intensity-3");
-  else if (c===2) slot.classList.add("intensity-2");
+
+const populateTimeSelectors = () => {
+  const hourOptions = Array.from({ length: 24 }, (_, i) =>
+    `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`
+  ).join('');
+
+  const minuteOptions = Array.from({ length: 60 }, (_, i) =>
+    `<option value="${i.toString().padStart(2, '0')}">${i.toString().padStart(2, '0')}</option>`
+  ).join('');
+
+  document.getElementById("startHour").innerHTML = hourOptions;
+  document.getElementById("endHour").innerHTML = hourOptions;
+  document.getElementById("startMinute").innerHTML = minuteOptions;
+  document.getElementById("endMinute").innerHTML = minuteOptions;
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  // — 1) firstpage에서 선택된 날짜 가져오기 —
+document.addEventListener("DOMContentLoaded", () => {
+  // localStorage에서 날짜, 모임 정보 가져오기
   const selectedDates = JSON.parse(localStorage.getItem('selectedDates')) || [];
+  const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo')) || {};
+  const roomName = meetingInfo.name || 'default-room';
 
-  // — 2) 날짜 <select> 채우기 —
+  // 날짜 선택 <select> 구성
   const dateSelect = document.getElementById('date');
   dateSelect.innerHTML = '';
   selectedDates.forEach(ds => {
-    const [y,m,d] = ds.split('-');
+    const [y, m, d] = ds.split('-');
     const opt = document.createElement('option');
     opt.value = ds;
     opt.textContent = `${parseInt(m)}/${parseInt(d)}`;
     dateSelect.appendChild(opt);
   });
 
-  // — 3) .schedule 내부에 day-column 동적 생성 —
+  // 스케줄 컬럼 생성
   const scheduleEl = document.querySelector('.schedule');
   scheduleEl.innerHTML = '';
   selectedDates.forEach(ds => {
@@ -151,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     col.classList.add('day-column');
     col.dataset.date = ds;
 
-    const [y,m,d] = ds.split('-');
+    const [y, m, d] = ds.split('-');
     const label = document.createElement('div');
     label.classList.add('day-label');
     label.textContent = `${parseInt(m)}/${parseInt(d)}`;
@@ -164,45 +104,74 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleEl.appendChild(col);
   });
 
-  // — 4) 타임슬롯 채우기 —
+  // 시간 선택 드롭다운 채우기
+  populateTimeSelectors();
+  // 슬롯 생성
   generateSlots();
 
-  // — 5) 사용자가 직접 시간 등록 로직 유지 —
-  document.getElementById("availabilityForm")
-    .addEventListener("submit", e => {
-      e.preventDefault();
-      const name = document.getElementById("name").value.trim();
-      const [startRaw,endRaw] = document.getElementById("time").value.trim().split("~").map(t => t.trim());
-      const date = document.getElementById("date").value;
-      const certainty = document.getElementById("certainty").value;
-      const fmt = t => t.includes(':') ? t.padStart(5,'0') : t.padStart(2,'0') + ':00';
-      const start = fmt(startRaw), end = fmt(endRaw);
+  // 모임 정보 패널 표시
+  document.getElementById('meeting-name').textContent     = meetingInfo.name || '';
+  document.getElementById('meeting-location').textContent = meetingInfo.location ? `장소: ${meetingInfo.location}` : '';
+  if (meetingInfo.link) {
+    const a = document.getElementById('meeting-link');
+    a.href = meetingInfo.link;
+    a.textContent = meetingInfo.link;
+  }
 
-      const slots = document.querySelector(`.day-column[data-date="${date}"] .time-slots`).children;
-      let mark = false;
-      for (let slot of slots) {
-        if (slot.dataset.time === start) mark = true;
-        if (mark) {
-          const cls = (certainty==="definite")?"busy-definite":"busy-maybe";
-          slot.classList.add(cls);
-          slot.dataset.tooltip = slot.dataset.tooltip
-            ? `${slot.dataset.tooltip}, ${name}`
-            : name;
-          slot.dataset.count = parseInt(slot.dataset.count)+1;
-          updateIntensity(slot);
-        }
-        if (slot.dataset.time === end) break;
-      }
-      e.target.reset();
+  // Firebase Realtime Database 연동
+  const db = window.firebaseDB;
+  const { firebaseRef, firebasePush, firebaseOnValue } = window;
+  const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
+
+  // 실시간 데이터 수신 및 화면 갱신
+  firebaseOnValue(availRef, snapshot => {
+    // 모든 슬롯 초기화
+    document.querySelectorAll('.minute-slot').forEach(slot => {
+      slot.classList.remove('busy-definite','busy-maybe');
+      slot.dataset.count = 0;
+      slot.dataset.tooltip = '';
+    });
+    document.querySelectorAll('.slot-group').forEach(group => {
+      group.classList.remove('intensity-2','intensity-3','intensity-4','intensity-5');
+      group.dataset.count = 0;
     });
 
-  // — 6) secondpage의 모임 정보 표시 유지 —
-  const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
-  document.getElementById('meeting-name').textContent     = info.name || '';
-  document.getElementById('meeting-location').textContent = info.location ? `장소: ${info.location}` : '';
-  if (info.link) {
-    const a = document.getElementById('meeting-link');
-    a.href = info.link;
-    a.textContent = info.link;
-  }
+    const data = snapshot.val() || {};
+    Object.values(data).forEach(entry => {
+      const { name, date, start, end, certainty } = entry;
+      const startTime = toMinutes(start);
+      const endTime = toMinutes(end);
+      const slotGroups = document.querySelector(`.day-column[data-date="${date}"] .time-slots`).children;
+      for (let group of slotGroups) {
+        const minuteSlots = group.querySelectorAll('.minute-slot');
+        for (let slot of minuteSlots) {
+          const slotMinutes = toMinutes(slot.dataset.time);
+          if (slotMinutes >= startTime && slotMinutes < endTime) {
+            slot.classList.add(certainty === 'definite' ? 'busy-definite' : 'busy-maybe');
+            slot.dataset.tooltip = slot.dataset.tooltip ? `${slot.dataset.tooltip}, ${name}` : name;
+            let count = parseInt(slot.dataset.count || '0', 10) + 1;
+            slot.dataset.count = count;
+
+            let groupCount = parseInt(group.dataset.count || '0', 10) + 1;
+            group.dataset.count = groupCount;
+            updateIntensity(group, groupCount);
+          }
+        }
+      }
+    });
+  });
+
+  // 사용자 입력 저장
+  document.getElementById("availabilityForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const date = document.getElementById("date").value;
+    const certainty = document.getElementById("certainty").value;
+    const start = `${document.getElementById("startHour").value}:${document.getElementById("startMinute").value}`;
+    const end = `${document.getElementById("endHour").value}:${document.getElementById("endMinute").value}`;
+
+    // Firebase에 데이터 푸시
+    firebasePush(availRef, { name, date, start, end, certainty });
+    e.target.reset();
+  });
 });

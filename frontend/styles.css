@@ -1,84 +1,3 @@
-/* body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f0e6b2;
-  margin: 0;
-  padding: 2rem;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-h1 {
-  background-color: #a57b38;
-  color: white;
-  padding: 0.8rem 1.2rem;
-  border-radius: 8px;
-  display: inline-block;
-}
-
-.input-guide {
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: #eee;
-  border-left: 6px solid #8aaf4d;
-}
-
-.dimmed {
-  color: gray;
-}
-
-.timetable-wrapper {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 2rem;
-}
-
-.column-group {
-  display: flex;
-  gap: 1rem;
-}
-
-.day {
-  background-color: #d4bc8e;
-  padding: 1rem;
-  border-radius: 1rem;
-  text-align: center;
-}
-
-.date {
-  font-weight: bold;
-  margin-top: 0.5rem;
-}
-
-.slots {
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.slot {
-  width: 40px;
-  height: 20px;
-  border: 1px dashed #000;
-  margin: 2px auto;
-}
-
-.slot.available {
-  background-color: #a0ea6d;
-}
-
-.slot.maybe {
-  background-color: #d6f8b8;
-}
-
-.slot.unavailable {
-  background-color: #ccc;
-} */
-
-
 body {
   font-family: 'Arial';
   background: #f8edc0;
@@ -153,19 +72,43 @@ header h1 {
   gap: 2px;
 }
 
-.slot {
-  height: 24px;
-  border: 1px solid #aaa;
-  background-color: white;
-  position: relative;
+.slot-group {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 6px;
-  font-size: 0.75rem;
+  border: 1px solid #aaa;
+  padding: 2px 4px;
+  margin-bottom: 2px;
+  font-size: 11px;
+  background-color: white;
+  position: relative;
+  height: 20px;
 }
 
-.slot[data-tooltip]:hover::after {
+.time-label {
+  font-weight: bold;
+  color: #333;
+}
+
+.minute-slot {
+  display: none;
+  background-color: transparent !important;
+}
+
+.intensity-2 { background-color: #c6e48b; }
+.intensity-3 { background-color: #7bc96f; }
+.intensity-4 { background-color: #239a3b; }
+.intensity-5 { background-color: #196127; }
+
+.busy-definite {
+  background-color: #92e682;
+}
+
+.busy-maybe {
+  background-color: #d2f5b0;
+}
+
+.slot-group[data-tooltip]:hover::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 105%;
@@ -179,26 +122,22 @@ header h1 {
   transform: translateY(-50%);
 }
 
-.busy-definite {
-  background-color: #92e682;
+.time-picker-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
 
-.busy-maybe {
-  background-color: #d2f5b0;
+.time-picker-inline label {
+  flex: 1;
+  font-weight: bold;
 }
 
-.intensity-2 {
-  filter: brightness(90%);
+.time-select-group {
+  flex: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-.intensity-3 {
-  filter: brightness(80%);
-}
-
-.intensity-4 {
-  filter: brightness(70%);
-}
-
-.intensity-5 {
-  filter: brightness(60%);
-}

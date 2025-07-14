@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>오눈고 한 번 모이자~</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>오눈고 한 번 모이자~</h1>
+    </header>
+
+    <section class="input-section">
+      <form id="availabilityForm">
+        <!-- 1) 이름 -->
+        <input type="text" id="name" placeholder="이름을 입력하세요" required />
+
+        <!-- 2) 시간 선택: 시작 -->
+        <div class="time-picker-inline">
+          <label for="startHour">시작 시간:</label>
+          <div class="time-select-group">
+            <select id="startHour" required></select> :
+            <select id="startMinute" required></select>
+          </div>
+        </div>
+
+        <!-- 3) 시간 선택: 종료 -->
+        <div class="time-picker-inline">
+          <label for="endHour">종료 시간:</label>
+          <div class="time-select-group">
+            <select id="endHour" required></select> :
+            <select id="endMinute" required></select>
+          </div>
+        </div>
+
+        <!-- 4) 날짜 선택 (firstpage에서 고른 날짜들만 표시) -->
+        <select id="date" required></select>
+
+        <!-- 5) 확실성 -->
+        <select id="certainty">
+          <option value="definite">확실함</option>
+          <option value="maybe">가능성 있음</option>
+        </select>
+
+        <button type="submit">시간 등록</button>
+      </form>
+    </section>
+
+    <!-- ▼ 스케줄 영역: JS가 동적 생성합니다 ▼ -->
+    <section class="schedule"></section>
+
+    <!-- 고정 표시 패널 -->
+    <section id="meeting-info"
+             style="position:fixed; bottom:1rem; right:1rem;
+                    width:280px; padding:1rem; background:#fff;
+                    border:1px solid #ccc; border-radius:8px;
+                    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+                    z-index:1000;">
+      <h2 id="meeting-name" style="margin-bottom:0.5rem;"></h2>
+      <p id="meeting-location" style="margin-bottom:0.5rem;"></p>
+      <a id="meeting-link" href="#" target="_blank"></a>
+    </section>
+  </div>
+
+  <!-- Firebase SDK 및 설정 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiVW_fvG5hXmt_6aMeDRwXVU19ByRO1iA",
+      authDomain: "moysay-d2606.firebaseapp.com",
+      databaseURL: "https://moysay-d2606-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "moysay-d2606",
+      storageBucket: "moysay-d2606.appspot.com",
+      messagingSenderId: "843998694219",
+      appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 전역으로 등록하여 script.js에서 사용
+    window.firebaseDB = db;
+    window.firebaseRef = ref;
+    window.firebasePush = push;
+    window.firebaseOnValue = onValue;
+  </script>
+
+  <!-- 기존 스크립트: Firebase 연동된 로직 포함 -->
+  <script src="script.js"></script>
+</body>
+</html>
