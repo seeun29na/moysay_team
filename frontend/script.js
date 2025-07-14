@@ -281,3 +281,30 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// script.js 제일 아래
+
+function saveTimeData(userId, data) {
+  firebase.database().ref("users/" + userId).set(data)
+    .then(() => {
+      console.log("저장 성공!");
+    })
+    .catch((error) => {
+      console.error("저장 실패:", error);
+    });
+}
+
+function getTimeData(userId) {
+  firebase.database().ref("users/" + userId).once("value")
+    .then((snapshot) => {
+      if (snapshot.exists()) {
+        console.log("불러온 데이터:", snapshot.val());
+      } else {
+        console.log("데이터 없음");
+      }
+    })
+    .catch((error) => {
+      console.error("불러오기 실패:", error);
+    });
+}
+
+
