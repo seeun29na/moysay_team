@@ -39,10 +39,10 @@ header h1 {
 
 .schedule {
   display: flex;
-  justify-content: center;  /* 가운데 정렬 */
+  justify-content: center;
   gap: 2rem;
   margin-top: 3rem;
-  flex-wrap: wrap;          /* 좁으면 줄바꿈 */
+  flex-wrap: wrap;
 }
 
 .day-column {
@@ -65,62 +65,61 @@ header h1 {
 }
 
 .slot-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid #aaa;
-  padding: 2px 4px;
-  margin-bottom: 2px;
-  font-size: 11px;
-  background-color: white;
   position: relative;
   height: 20px;
+  border: 1px solid #aaa;
+  background-color: white;
+  margin-bottom: 2px;
+  overflow: hidden;
+  padding: 0;
 }
 
 .time-label {
-  font-weight: bold;
-  color: #333;
-}
-
-.minute-slot {
-  display: none;
-  background-color: transparent !important;
-}
-
-/* 가능성 있음: 회색 계열 */
-.intensity-maybe-1 { background-color: #e0e0e0; } /* 연회색 */
-.intensity-maybe-2 { background-color: #bdbdbd; }
-.intensity-maybe-3 { background-color: #9e9e9e; }
-.intensity-maybe-4 { background-color: #616161; } /* 진한 회색 */
-
-/* 확실함 (진한 초록 계열) */
-.intensity-definite-1 { background-color: #b8f2b2; }  /* 연한 확실 */
-.intensity-definite-2 { background-color: #9ae884; }
-.intensity-definite-3 { background-color: #6fce58; }
-.intensity-definite-4 { background-color: #4ea93d; }  /* 가장 진한 "확실함" */
-
-.busy-definite {
-  background-color: #92e682;
-}
-
-.busy-maybe {
-  background-color: #d2f5b0;
-}
-
-.slot-group[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
   position: absolute;
-  left: 105%;
-  white-space: nowrap;
-  background: #333;
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  left: 4px;
   top: 50%;
   transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: bold;
+  z-index: 2;
+  background: white;
 }
 
+/* bar 스타일 */
+.availability-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  z-index: 1;
+  border-radius: 3px;
+  opacity: 0.9;
+}
+
+/* 확실함 (definite) bar 단계별 색상 */
+.availability-bar.definite-1 { background-color: rgba(102, 187, 106, 0.2); }
+.availability-bar.definite-2 { background-color: rgba(102, 187, 106, 0.4); }
+.availability-bar.definite-3 { background-color: rgba(102, 187, 106, 0.6); }
+.availability-bar.definite-4 { background-color: rgba(102, 187, 106, 0.8); }
+
+/* 가능성 있음 (maybe) bar 단계별 색상 */
+.availability-bar.maybe-1 { background-color: rgba(158, 158, 158, 0.2); }
+.availability-bar.maybe-2 { background-color: rgba(158, 158, 158, 0.4); }
+.availability-bar.maybe-3 { background-color: rgba(158, 158, 158, 0.6); }
+.availability-bar.maybe-4 { background-color: rgba(158, 158, 158, 0.8); }
+
+/* (기존) 그룹 배경 진하기도 필요할 경우 대비해 유지 */
+.intensity-definite-1 { background-color: rgba(102, 187, 106, 0.2); }
+.intensity-definite-2 { background-color: rgba(102, 187, 106, 0.4); }
+.intensity-definite-3 { background-color: rgba(102, 187, 106, 0.6); }
+.intensity-definite-4 { background-color: rgba(102, 187, 106, 0.8); }
+
+.intensity-maybe-1 { background-color: rgba(207, 216, 220, 0.2); }
+.intensity-maybe-2 { background-color: rgba(207, 216, 220, 0.4); }
+.intensity-maybe-3 { background-color: rgba(207, 216, 220, 0.6); }
+.intensity-maybe-4 { background-color: rgba(207, 216, 220, 0.8); }
+
+
+/* 시간 선택 UI */
 .time-picker-inline {
   display: flex;
   align-items: center;
@@ -139,4 +138,44 @@ header h1 {
   align-items: center;
   gap: 5px;
 }
+.memo-section {
+  margin: 2rem auto;
+  padding: 1rem;
+  max-width: 600px;
+  background-color: #fff5e1;
+  border: 2px solid #a7904d;
+  border-radius: 12px;
+}
 
+.memo-section textarea {
+  width: 100%;
+  height: 100px;
+  font-size: 1rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.memo-section button {
+  background-color: #a7904d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+.memo-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.memo-section li {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+}
