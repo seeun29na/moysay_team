@@ -5,25 +5,28 @@ const toMinutes = (timeStr) => {
 };
 
 // 그룹별 강도(intensity) 업데이트 (definite vs maybe)
+// ─── 그룹별 강도(intensity) 업데이트 (definite vs maybe) ───
 const updateIntensity = (groupDiv, countDefinite, countMaybe) => {
+  // 1) 기존 intensity 클래스 제거
   groupDiv.classList.remove(
-    "intensity-definite-1", "intensity-definite-2", "intensity-definite-3", "intensity-definite-4",
-    "intensity-maybe-1",    "intensity-maybe-2",    "intensity-maybe-3",    "intensity-maybe-4"
+    "intensity-definite-1","intensity-definite-2","intensity-definite-3","intensity-definite-4",
+    "intensity-maybe-1","intensity-maybe-2","intensity-maybe-3","intensity-maybe-4"
   );
 
-  const isDefiniteDominant = countDefinite >= countMaybe;
+  // 2) 더 많은 선택(확실 vs 가능) 쪽으로 우선 색상 결정
+  const isDef = countDefinite >= countMaybe;
   const maxCount = Math.max(countDefinite, countMaybe);
-  let level = 0;
-  if (maxCount >= 20) level = 4;
-  else if (maxCount >= 10) level = 3;
-  else if (maxCount >= 5) level = 2;
-  else if (maxCount > 0) level = 1;
 
+  // 3) 사용자 수만큼 level 늘리되, CSS에 정의된 최대 4단계까지만
+  const level = Math.min(maxCount, 4);
+
+  // 4) level이 1 이상일 때만 클래스 추가
   if (level > 0) {
-    const prefix = isDefiniteDominant ? "intensity-definite-" : "intensity-maybe-";
+    const prefix = isDef ? "intensity-definite-" : "intensity-maybe-";
     groupDiv.classList.add(`${prefix}${level}`);
   }
 };
+
 
 // 시간 슬롯 생성 (meetingInfo.time 반영 가능)
 const generateSlots = () => {
@@ -143,36 +146,67 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.querySelectorAll('.slot-group').forEach(group => {
       group.classList.remove(
-        'intensity-definite-1','intensity-definite-2','intensity-definite-3','intensity-definite-4',
-        'intensity-maybe-1','intensity-maybe-2','intensity-maybe-3','intensity-maybe-4'
+        "intensity-definite-1","intensity-definite-2","intensity-definite-3","intensity-definite-4",
+        "intensity-maybe-1","intensity-maybe-2","intensity-maybe-3","intensity-maybe-4"
       );
       group.dataset.definite = 0;
       group.dataset.maybe = 0;
     });
 
     const data = snapshot.val() || {};
-    Object.values(data).forEach(entry => {
-      const { name, date, start, end, certainty } = entry;
-      const startTime = toMinutes(start);
-      const endTime = toMinutes(end);
-      const slotGroups = document.querySelector(`.day-column[data-date="${date}"] .time-slots`).children;
-      for (let group of slotGroups) {
-        let defCount = 0, mayCount = 0;
-        const minuteSlots = group.querySelectorAll('.minute-slot');
-        for (let slot of minuteSlots) {
-          const slotMin = toMinutes(slot.dataset.time);
-          if (slotMin >= startTime && slotMin < endTime) {
-            slot.classList.add(certainty === 'definite' ? 'busy-definite' : 'busy-maybe');
-            slot.dataset.tooltip = slot.dataset.tooltip ? `${slot.dataset.tooltip}, ${name}` : name;
-            if (certainty === 'definite') defCount++; else mayCount++;
-          }
-        }
-        group.dataset.definite = defCount;
-        group.dataset.maybe = mayCount;
-        updateIntensity(group, defCount, mayCount);
-      }
-    });
+    // 모든 group 별로 count 초기화
+  document.querySelectorAll('.slot-group').forEach(g => {
+    g.dataset.definite = 0;
+    g.dataset.maybe    = 0;
   });
+
+
+    Object.values(data).forEach(entry => {
+        const { name, date, start, end, certainty } = entry;
+        const sMin = toMinutes(start), eMin = toMinutes(end);
+        const groups = document.querySelectorAll(
+        `.day-column[data-date="${date}"] .slot-group`
+        );
+        groups.forEach(g => {
+        // 1) 이 사람(entry)이 이 그룹을 하나라도 선택했는지 체크
+        const covers = Array.from(g.querySelectorAll('.minute-slot')).some(slot => {
+            const t = toMinutes(slot.dataset.time);
+            return t >= sMin && t < eMin;
+        });
+        if (!covers) return;
+
+        // 2) tooltip & busy 표시 (기존 로직 그대로)
+        g.querySelectorAll('.minute-slot').forEach(slot => {
+            const t = toMinutes(slot.dataset.time);
+            if (t >= sMin && t < eMin) {
+            slot.classList.add(
+                certainty === 'definite' ? 'busy-definite' : 'busy-maybe'
+            );
+            slot.dataset.tooltip = slot.dataset.tooltip
+                ? `${slot.dataset.tooltip}, ${name}`
+                : name;
+            }
+        });
+
+        // 3) 사람 수 기준으로 1씩 누적
+        if (certainty === 'definite') {
+            g.dataset.definite = parseInt(g.dataset.definite, 10) + 1;
+        } else {
+            g.dataset.maybe    = parseInt(g.dataset.maybe,    10) + 1;
+        }
+        });
+    });
+
+    // 4) 마지막에 사람 수 기준으로 한 번만 단계 적용
+    document.querySelectorAll('.slot-group').forEach(g => {
+        updateIntensity(
+        g,
+        parseInt(g.dataset.definite, 10),
+        parseInt(g.dataset.maybe,    10)
+        );
+    });
+    });
+
 
   // 사용자 입력 저장
   document.getElementById('availabilityForm').addEventListener('submit', e => {
@@ -202,5 +236,3 @@ window.addEventListener('DOMContentLoaded', () => {
   const title = document.getElementById('meeting-title');
   if (info && info.name) title.textContent = info.name;
 });
-
-
