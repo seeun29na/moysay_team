@@ -107,17 +107,6 @@ header h1 {
 .availability-bar.maybe-3 { background-color: rgba(158, 158, 158, 0.6); }
 .availability-bar.maybe-4 { background-color: rgba(158, 158, 158, 0.8); }
 
-/* (기존) 그룹 배경 진하기도 필요할 경우 대비해 유지 */
-.intensity-definite-1 { background-color: rgba(102, 187, 106, 0.2); }
-.intensity-definite-2 { background-color: rgba(102, 187, 106, 0.4); }
-.intensity-definite-3 { background-color: rgba(102, 187, 106, 0.6); }
-.intensity-definite-4 { background-color: rgba(102, 187, 106, 0.8); }
-
-.intensity-maybe-1 { background-color: rgba(207, 216, 220, 0.2); }
-.intensity-maybe-2 { background-color: rgba(207, 216, 220, 0.4); }
-.intensity-maybe-3 { background-color: rgba(207, 216, 220, 0.6); }
-.intensity-maybe-4 { background-color: rgba(207, 216, 220, 0.8); }
-
 
 /* 시간 선택 UI */
 .time-picker-inline {
