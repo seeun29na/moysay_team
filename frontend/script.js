@@ -1,37 +1,17 @@
-// 유틸 함수들
+// 유틸 함수
 const toMinutes = (timeStr) => {
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
 };
 
-// 그룹별 강도(intensity) 업데이트 (definite vs maybe)
-const updateIntensity = (groupDiv, countDefinite, countMaybe) => {
-  groupDiv.classList.remove(
-    "intensity-definite-1", "intensity-definite-2", "intensity-definite-3", "intensity-definite-4",
-    "intensity-maybe-1",    "intensity-maybe-2",    "intensity-maybe-3",    "intensity-maybe-4"
-  );
-
-  const isDefiniteDominant = countDefinite >= countMaybe;
-  const maxCount = Math.max(countDefinite, countMaybe);
-  let level = 0;
-  if (maxCount >= 20) level = 4;
-  else if (maxCount >= 10) level = 3;
-  else if (maxCount >= 5) level = 2;
-  else if (maxCount > 0) level = 1;
-
-  if (level > 0) {
-    const prefix = isDefiniteDominant ? "intensity-definite-" : "intensity-maybe-";
-    groupDiv.classList.add(`${prefix}${level}`);
-  }
-};
-
-// 시간 슬롯 생성 (meetingInfo.time 반영 가능)
+// 시간 슬롯 생성
 const generateSlots = () => {
   const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
   let startHour = 9, endHour = 22;
 
-  if (info.time && info.time.includes('~')) {
-    const [start, end] = info.time.split('~').map(s => parseInt(s.trim(), 10));
+  if (info.time && (info.time.includes('~') || info.time.includes('-'))) {
+    // ~ 또는 - 로 나눌 수 있도록 정규표현식 사용
+    const [start, end] = info.time.split(/[-~]/).map(s => parseInt(s.trim(), 10));
     if (!isNaN(start)) startHour = start;
     if (!isNaN(end))   endHour = end;
   }
@@ -42,24 +22,8 @@ const generateSlots = () => {
       for (let m = 0; m < 60; m += groupInterval) {
         const groupDiv = document.createElement('div');
         groupDiv.classList.add('slot-group');
-        groupDiv.dataset.definite = 0;
-        groupDiv.dataset.maybe = 0;
-
         const baseTime = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
         groupDiv.dataset.start = baseTime;
-
-        for (let i = 0; i < groupInterval; i++) {
-          const minutes = m + i;
-          const hh = String(h + Math.floor(minutes/60)).padStart(2,'0');
-          const mm = String(minutes % 60).padStart(2,'0');
-          const time = `${hh}:${mm}`;
-
-          const minuteSlot = document.createElement('div');
-          minuteSlot.classList.add('minute-slot');
-          minuteSlot.dataset.time = time;
-          minuteSlot.dataset.tooltip = '';
-          groupDiv.appendChild(minuteSlot);
-        }
 
         const label = document.createElement('span');
         label.classList.add('time-label');
@@ -74,9 +38,20 @@ const generateSlots = () => {
 
 // 시/분 선택 드롭다운 채우기
 const populateTimeSelectors = () => {
-  const hourOptions = Array.from({ length: 24 }, (_, i) =>
-    `<option value="${i.toString().padStart(2,'0')}">${i.toString().padStart(2,'0')}</option>`
-  ).join('');
+  const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
+  let startHour = 0, endHour = 23;
+
+  if (info.time && info.time.includes('~')) {
+    const [start, end] = info.time.split('~').map(s => parseInt(s.trim(), 10));
+    if (!isNaN(start)) startHour = start;
+    if (!isNaN(end))   endHour = end;
+  }
+
+  const hourOptions = Array.from({ length: endHour - startHour + 1 }, (_, i) => {
+    const hour = (startHour + i).toString().padStart(2, '0');
+    return `<option value="${hour}">${hour}</option>`;
+  }).join('');
+
   const minuteOptions = Array.from({ length: 60 }, (_, i) =>
     `<option value="${i.toString().padStart(2,'0')}">${i.toString().padStart(2,'0')}</option>`
   ).join('');
@@ -87,13 +62,12 @@ const populateTimeSelectors = () => {
   document.getElementById('endMinute').innerHTML   = minuteOptions;
 };
 
-// 메인 페이지 초기화
+// 페이지 초기화
 document.addEventListener('DOMContentLoaded', () => {
   const selectedDates = JSON.parse(localStorage.getItem('selectedDates')) || [];
   const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo')) || {};
   const roomName = meetingInfo.name || 'default-room';
 
-  // 날짜 선택 박스 채우기
   const dateSelect = document.getElementById('date');
   dateSelect.innerHTML = '';
   selectedDates.forEach(ds => {
@@ -104,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
     dateSelect.appendChild(opt);
   });
 
-  // 스케줄 컬럼 생성
   const scheduleEl = document.querySelector('.schedule');
   scheduleEl.innerHTML = '';
   selectedDates.forEach(ds => {
@@ -125,56 +98,50 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleEl.appendChild(col);
   });
 
-  // 시간 선택 셀렉터 & 슬롯 생성
   populateTimeSelectors();
   generateSlots();
 
-  // Firebase Realtime Database 연동
   const db = window.firebaseDB;
   const { firebaseRef, firebasePush, firebaseOnValue } = window;
   const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
+  const memoRef = firebaseRef(db, `rooms/${roomName}/memos`); // ★ 추가
 
-  // 실시간 데이터 수신 및 화면 갱신
+  // 실시간 수신
   firebaseOnValue(availRef, snapshot => {
-    // 초기화
-    document.querySelectorAll('.minute-slot').forEach(slot => {
-      slot.classList.remove('busy-definite', 'busy-maybe');
-      slot.dataset.tooltip = '';
-    });
-    document.querySelectorAll('.slot-group').forEach(group => {
-      group.classList.remove(
-        'intensity-definite-1','intensity-definite-2','intensity-definite-3','intensity-definite-4',
-        'intensity-maybe-1','intensity-maybe-2','intensity-maybe-3','intensity-maybe-4'
-      );
-      group.dataset.definite = 0;
-      group.dataset.maybe = 0;
-    });
+    // 기존 bar 제거
+    document.querySelectorAll('.slot-group .availability-bar').forEach(el => el.remove());
 
     const data = snapshot.val() || {};
     Object.values(data).forEach(entry => {
       const { name, date, start, end, certainty } = entry;
-      const startTime = toMinutes(start);
-      const endTime = toMinutes(end);
-      const slotGroups = document.querySelector(`.day-column[data-date="${date}"] .time-slots`).children;
-      for (let group of slotGroups) {
-        let defCount = 0, mayCount = 0;
-        const minuteSlots = group.querySelectorAll('.minute-slot');
-        for (let slot of minuteSlots) {
-          const slotMin = toMinutes(slot.dataset.time);
-          if (slotMin >= startTime && slotMin < endTime) {
-            slot.classList.add(certainty === 'definite' ? 'busy-definite' : 'busy-maybe');
-            slot.dataset.tooltip = slot.dataset.tooltip ? `${slot.dataset.tooltip}, ${name}` : name;
-            if (certainty === 'definite') defCount++; else mayCount++;
-          }
+      const startMin = toMinutes(start);
+      const endMin = toMinutes(end);
+
+      const slotGroups = document.querySelectorAll(`.day-column[data-date="${date}"] .slot-group`);
+      slotGroups.forEach(group => {
+        const groupStart = toMinutes(group.dataset.start);
+        const groupEnd = groupStart + 30;
+
+        const overlapStart = Math.max(groupStart, startMin);
+        const overlapEnd = Math.min(groupEnd, endMin);
+        if (overlapEnd > overlapStart) {
+          const left = ((overlapStart - groupStart) / 30) * 100;
+          const width = ((overlapEnd - overlapStart) / 30) * 100;
+
+          const bar = document.createElement('div');
+          bar.classList.add('availability-bar');
+          bar.classList.add(certainty); // 'definite' or 'maybe'
+          bar.style.left = `${left}%`;
+          bar.style.width = `${width}%`;
+          bar.title = `${start}~${end} ${name}`;
+
+          group.appendChild(bar);
         }
-        group.dataset.definite = defCount;
-        group.dataset.maybe = mayCount;
-        updateIntensity(group, defCount, mayCount);
-      }
+      });
     });
   });
 
-  // 사용자 입력 저장
+  // 입력 처리
   document.getElementById('availabilityForm').addEventListener('submit', e => {
     e.preventDefault();
     const name = document.getElementById('name').value.trim();
@@ -186,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.reset();
   });
 
-  // 모임 정보 패널 표시
+  // 모임 정보 패널
   document.getElementById('meeting-name').textContent = meetingInfo.name || '';
   document.getElementById('meeting-location').textContent = meetingInfo.location ? `장소: ${meetingInfo.location}` : '';
   if (meetingInfo.link) {
@@ -196,38 +163,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// thirdpage용 스크립트 (페이지 로드 시 meetingInfo 적용)
+// 페이지 타이틀 설정
 window.addEventListener('DOMContentLoaded', () => {
   const info = JSON.parse(localStorage.getItem('meetingInfo'));
   const title = document.getElementById('meeting-title');
   if (info && info.name) title.textContent = info.name;
 });
-
-
-// script.js 제일 아래
-
-function saveTimeData(userId, data) {
-  firebase.database().ref("users/" + userId).set(data)
-    .then(() => {
-      console.log("저장 성공!");
-    })
-    .catch((error) => {
-      console.error("저장 실패:", error);
-    });
-}
-
-function getTimeData(userId) {
-  firebase.database().ref("users/" + userId).once("value")
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        console.log("불러온 데이터:", snapshot.val());
-      } else {
-        console.log("데이터 없음");
-      }
-    })
-    .catch((error) => {
-      console.error("불러오기 실패:", error);
-    });
-}
-
-
