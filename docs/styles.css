@@ -107,7 +107,6 @@ header h1 {
 .availability-bar.maybe-3 { background-color: rgba(158, 158, 158, 0.6); }
 .availability-bar.maybe-4 { background-color: rgba(158, 158, 158, 0.8); }
 
-
 /* 시간 선택 UI */
 .time-picker-inline {
   display: flex;
