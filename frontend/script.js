@@ -26,7 +26,6 @@ const updateIntensity = (groupDiv, countDefinite, countMaybe) => {
   }
 };
 
-
 // 시간 슬롯 생성
 const generateSlots = () => {
   const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
@@ -150,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 시간 선택 셀렉터 & 슬롯 생성
   populateTimeSelectors();
   generateSlots();
-
+  
 
   // Firebase Realtime Database 연동
   const db = window.firebaseDB;
