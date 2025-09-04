@@ -25,6 +25,7 @@
     <div class="share-row">
       <button id="btnSaveImage">이미지로 저장</button>
       <button id="btnCopyLink">링크 복사</button>
+      <button id="btnNewMeeting">새 약속 만들기</button>
     </div>
     <p class="small">* “가능(확실+가능성)” 기준으로 전원 가능 시간대를 먼저 찾고, 없으면 최대 인원 시간대를 보여줍니다.</p>
   </div>
@@ -149,6 +150,12 @@
     document.getElementById('btnCopyLink').addEventListener('click', () => {
       const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(room)}`;
       navigator.clipboard.writeText(url).then(()=>alert('링크가 복사되었습니다!'));
+    });
+    // 새 약속 만들기: 저장된 정보 초기화 후 첫 페이지(index.html)로 이동
+    document.getElementById('btnNewMeeting').addEventListener('click', () => {
+        localStorage.removeItem('selectedDates');
+        localStorage.removeItem('meetingInfo');
+        window.location.href = './first_page.html'; // 첫 페이지(달력 페이지)로 이동
     });
   </script>
 </body>
