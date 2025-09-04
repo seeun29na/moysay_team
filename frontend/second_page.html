@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>secondpage - 모이새 일정 만들기</title>
+
   <style>
     * { box-sizing: border-box; font-family: 'Arial', sans-serif; }
     body { margin: 0; background-color: #f4ebc5; padding: 2rem; }
@@ -25,7 +26,7 @@
       padding: 0.5rem 1rem;
       border-radius: 8px;
     }
-    input[type="text"] {
+    input[type="text"], input[type="datetime-local"] {
       width: 100%;
       padding: 0.75rem;
       font-size: 1rem;
@@ -33,6 +34,11 @@
       border-radius: 8px;
       background-color: #bda76c;
       color: #3e2f1c;
+    }
+    .hint {
+      font-size: 0.9rem;
+      color: #5b4a2b;
+      margin-top: .25rem;
     }
     .next-btn {
       display: block;
@@ -69,20 +75,46 @@
     <div class="form-group">
       <label for="time">4. 만남 가능 시간을 설정하세요! (ex. 10~17)</label>
       <input type="text" id="time" placeholder="예: 10~17" />
+      <div class="hint">예시: <b>10~17</b> 또는 <b>9-22</b> 처럼 입력하면, 다음 화면 시간 선택 범위가 맞춰져요.</div>
+    </div>
+
+    <!-- ★ 추가: 모집 마감시간 -->
+    <div class="form-group">
+      <label for="deadline">5. 모집 마감시간을 설정하세요! (필수)</label>
+      <input type="datetime-local" id="deadline" />
+      <div class="hint">마감시간이 지나면 자동으로 ‘최종 결과 화면’으로 전환돼요.</div>
     </div>
 
     <button class="next-btn" onclick="saveAndRedirect()">NEXT</button>
   </div>
 
   <script>
+    // datetime-local의 min 값을 "지금 이후"로 설정(실수 방지용)
+    (function setMinDeadline() {
+      const pad = n => String(n).padStart(2, '0');
+      const d = new Date();
+      const local = new Date(d.getTime() - d.getTimezoneOffset()*60000) // 로컬오프셋 반영
+                      .toISOString().slice(0,16);
+      document.getElementById('deadline').min = local;
+    })();
+
     function saveAndRedirect() {
-      const data = {
-        name: document.getElementById('name').value,
-        location: document.getElementById('location').value,
-        link: document.getElementById('link').value,
-        time: document.getElementById('time').value
-      };
+      const name = document.getElementById('name').value.trim();
+      const location = document.getElementById('location').value.trim();
+      const link = document.getElementById('link').value.trim();
+      const time = document.getElementById('time').value.trim();
+      const deadlineStr = document.getElementById('deadline').value;
+
+      if (!name) { alert('모임 이름을 입력하세요.'); return; }
+      if (!deadlineStr) { alert('모집 마감시간을 설정하세요.'); return; }
+
+      // 로컬 타임존 기준 datetime-local → 타임스탬프(ms)
+      const deadlineMs = new Date(deadlineStr).getTime();
+
+      const data = { name, location, link, time, deadline: deadlineMs };
       localStorage.setItem('meetingInfo', JSON.stringify(data));
+
+      // 다음 단계(참여자 시간 입력 화면)
       window.location.href = './third_page.html';
     }
   </script>
