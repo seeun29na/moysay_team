@@ -156,14 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const { firebaseRef, firebasePush, firebaseOnValue } = window;
   const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
   const memoRef  = firebaseRef(db, `rooms/${roomName}/memos`); // 추후 메모 연동
-<<<<<<< HEAD
-
 
   /* ──────────────────────────────
-  * 모집 마감시간 저장 & 감시
-  *  - localStorage.meetingInfo.deadline → DB /rooms/{room}/meta/deadline 1회 기록(없을 때만)
-  *  - DB의 deadline을 실시간 감시해 마감 도달 시 result.html로 이동
-  * ────────────────────────────── */
+   * 모집 마감시간 저장 & 감시
+   *  - localStorage.meetingInfo.deadline → DB /rooms/{room}/meta/deadline 1회 기록(없을 때만)
+   *  - DB의 deadline을 실시간 감시해 마감 도달 시 result.html로 이동
+   * ────────────────────────────── */
   const metaRef = firebaseRef(db, `rooms/${roomName}/meta`);
 
   (function saveDeadlineOnce() {
@@ -196,10 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   watchDeadlineAndRedirect();
-  
- /*──────────────────────────────*/
-=======
->>>>>>> b93358f8797f6fe5a3e8c05cc9fdf24ccab05a6c
+  /* ────────────────────────────── */
 
   firebaseOnValue(availRef, snapshot => {
     // 1. 초기화
@@ -271,8 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const bar = document.createElement('div');
           bar.classList.add('availability-bar');
 
-          //bar.classList.add(certainty); // 'definite' or 'maybe'
-
           // ✅ 겹치는 인원 수 기반 단계 계산
           const count = parseInt(group.dataset[certainty], 10);
           const level = Math.min(count, 4); // 최대 4단계까지만
@@ -299,8 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-
-
   // 입력 처리
   document.getElementById('availabilityForm').addEventListener('submit', e => {
     e.preventDefault();
@@ -321,6 +312,14 @@ document.addEventListener('DOMContentLoaded', () => {
     a.href = meetingInfo.link;
     a.textContent = meetingInfo.link;
   }
+
+  // (선택) 수동 전환 버튼
+  const goBtn = document.getElementById('goResultBtn');
+  if (goBtn) {
+    goBtn.addEventListener('click', () => {
+      window.location.href = `./result.html?room=${encodeURIComponent(roomName)}`;
+    });
+  }
 });
 
 // 페이지 타이틀 설정
@@ -330,11 +329,3 @@ window.addEventListener('DOMContentLoaded', () => {
   if (info && info.name) title.textContent = info.name;
 });
 
-
-// 수동 전환 버튼(있을 때만)
-const goBtn = document.getElementById('goResultBtn');
-if (goBtn) {
-  goBtn.addEventListener('click', () => {
-    window.location.href = `./result.html?room=${encodeURIComponent(roomName)}`;
-  });
-}
