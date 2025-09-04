@@ -156,6 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const { firebaseRef, firebasePush, firebaseOnValue } = window;
   const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
   const memoRef  = firebaseRef(db, `rooms/${roomName}/memos`); // 추후 메모 연동
+<<<<<<< HEAD
 
 
   /* ──────────────────────────────
@@ -197,6 +198,8 @@ document.addEventListener('DOMContentLoaded', () => {
   watchDeadlineAndRedirect();
   
  /*──────────────────────────────*/
+=======
+>>>>>>> b93358f8797f6fe5a3e8c05cc9fdf24ccab05a6c
 
   firebaseOnValue(availRef, snapshot => {
     // 1. 초기화
