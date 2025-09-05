@@ -12,6 +12,49 @@
     .share-row { display:flex; gap:.6rem; margin-top:1rem; }
     .share-row button { padding:.6rem 1rem; border-radius:8px; border:none; background:#a7904d; color:#fff; cursor:pointer; }
     .small { color:#555; font-size:.95rem; margin:.3rem 0 0; }
+
+    /* 좌하단 기부하기 버튼(FAB) */
+    .donate-fab {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 9999;
+      padding: .75rem 1rem;
+      border: none;
+      border-radius: 999px;
+      background: #a7904d;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0,0,0,.15);
+    }
+    .donate-fab:active { transform: translateY(1px); }
+
+    /* 모달 */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      display: none;            /* 기본 숨김 */
+      align-items: center; justify-content: center;
+      z-index: 10000;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal-box {
+      width: min(90vw, 420px);
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e7d9ad;
+      padding: 1rem 1.2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    }
+    .modal-box h3 { margin: 0 0 .6rem; }
+    .modal-box p  { margin: 0 0 1rem; line-height: 1.5; }
+    .modal-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+    .btn {
+      padding: .55rem .9rem; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .btn-primary { background:#a7904d; color:#fff; }
+    .btn-ghost  { background:#f2f2f2; color:#333; }
   </style>
 </head>
 <body>
@@ -28,6 +71,27 @@
       <button id="btnNewMeeting">새 약속 만들기</button>
     </div>
     <p class="small">* “가능(확실+가능성)” 기준으로 전원 가능 시간대를 먼저 찾고, 없으면 최대 인원 시간대를 보여줍니다.</p>
+  </div>
+
+  <!-- 좌측 하단 기부하기 버튼 -->
+  <button class="donate-fab" id="donateFab" aria-haspopup="dialog" aria-controls="donateModal">
+    기부하기
+  </button>
+
+  <!-- 기부 안내 모달 -->
+  <div class="modal-backdrop" id="donateModal" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+    <div class="modal-box">
+      <h3 id="donateTitle">기부 안내</h3>
+      <p>
+        기부를 원하신다면<br/>
+        <strong>계좌 번호: 12345678</strong> 로 입금해주세요.<br/>
+        진심으로 감사합니다!
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="donateClose">닫기</button>
+        <button class="btn btn-primary" id="donateCopy">계좌 복사</button>
+      </div>
+    </div>
   </div>
 
   <!-- html2canvas for image export -->
@@ -61,8 +125,6 @@
     // DB에서 availability 모두 읽어 집계
     const availRef = ref(db, `rooms/${room}/availabilities`);
     onValue(availRef, (snap) => {
-      // const rows = snap.val() || {};
-      /**********************************/
       const rows = snap.val() || {};
       const keys = Object.keys(rows);
       if (keys.length === 0) {
@@ -70,16 +132,13 @@
         document.getElementById('bestBox').innerHTML = '';
         return;
       }
-/****************************/      
-
 
       // 참가자 집합
       const people = new Set();
       for (const k in rows) people.add(rows[k].name);
       const total = people.size;
 
-      // (A) 30분 그룹 키: "YYYY-MM-DD HH:MM"
-      //     각 그룹별로 'definite' + 'maybe'에 **사람 기준 1회** 카운트
+      // 30분 그룹화
       const groupMap = new Map(); // key -> {definite, maybe}
       function inc(key, type){
         const cur = groupMap.get(key) || {definite:0, maybe:0};
@@ -87,10 +146,8 @@
         groupMap.set(key, cur);
       }
 
-      // 각 레코드에 대해 이름/날짜/시작~끝을 1분 단위로 돌기엔 무거우니,
-      // 30분 그룹 경계 기준으로 걸친 그룹만 1회 카운트
       for (const k in rows) {
-        const { name, date, start, end, certainty } = rows[k];
+        const { date, start, end, certainty } = rows[k];
         const [sh, sm] = start.split(':').map(Number);
         const [eh, em] = end.split(':').map(Number);
         const sMin = sh*60+sm, eMin = eh*60+em;
@@ -103,7 +160,6 @@
         }
       }
 
-      // everyone: (definite+maybe) === total
       const flat = [...groupMap.entries()].map(([key, v]) => ({
         key, totalCan: v.definite + v.maybe, definite: v.definite, maybe: v.maybe
       })).sort((a,b)=>a.key.localeCompare(b.key));
@@ -151,11 +207,44 @@
       const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(room)}`;
       navigator.clipboard.writeText(url).then(()=>alert('링크가 복사되었습니다!'));
     });
-    // 새 약속 만들기: 저장된 정보 초기화 후 첫 페이지(index.html)로 이동
+    // 새 약속 만들기
     document.getElementById('btnNewMeeting').addEventListener('click', () => {
-        localStorage.removeItem('selectedDates');
-        localStorage.removeItem('meetingInfo');
-        window.location.href = './index.html'; // 첫 페이지(달력 페이지)로 이동
+      localStorage.removeItem('selectedDates');
+      localStorage.removeItem('meetingInfo');
+      window.location.href = './index.html';
+    });
+
+    // ── 기부하기 모달 ─────────────────────────────
+    const $fab = document.getElementById('donateFab');
+    const $modal = document.getElementById('donateModal');
+    const $close = document.getElementById('donateClose');
+    const $copy = document.getElementById('donateCopy');
+    const ACCOUNT_TEXT = '계좌 번호 12345678';
+
+    const openModal = () => { $modal.classList.add('show'); };
+    const closeModal = () => { $modal.classList.remove('show'); };
+
+    $fab.addEventListener('click', openModal);
+    $close.addEventListener('click', closeModal);
+
+    // 바깥 클릭 닫기
+    $modal.addEventListener('click', (e) => {
+      if (e.target === $modal) closeModal();
+    });
+
+    // ESC로 닫기
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
+    });
+
+    // 계좌 복사
+    $copy.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('12345678');
+        alert(`${ACCOUNT_TEXT}가 복사되었습니다!`);
+      } catch {
+        alert('복사에 실패했습니다. 직접 입력해주세요: 12345678');
+      }
     });
   </script>
 </body>
