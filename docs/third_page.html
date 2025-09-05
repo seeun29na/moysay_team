@@ -47,6 +47,7 @@
 
         <button type="submit">시간 등록</button>
       </form>
+      <button id="goResultBtn" style="margin-top:.5rem;">결과 화면 열기</button>
     </section>
 
     <!-- 의견 메모장 -->
@@ -105,7 +106,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const memoRef = ref(db, 'memos');
+    //const memoRef = ref(db, 'memos');
+    // roomName을 localStorage에서 읽어와서 방별 경로로 저장/조회
+    const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo')) || {};
+    const roomName = meetingInfo.name || 'default-room';
+    const memoRef = ref(db, `rooms/${roomName}/memos`);
 
     // DOM이 준비되면 실행
     window.addEventListener("DOMContentLoaded", () => {

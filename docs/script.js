@@ -157,6 +157,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
   const memoRef  = firebaseRef(db, `rooms/${roomName}/memos`); // 추후 메모 연동
 
+  /* ──────────────────────────────
+   * 모집 마감시간 저장 & 감시
+   *  - localStorage.meetingInfo.deadline → DB /rooms/{room}/meta/deadline 1회 기록(없을 때만)
+   *  - DB의 deadline을 실시간 감시해 마감 도달 시 result.html로 이동
+   * ────────────────────────────── */
+  const metaRef = firebaseRef(db, `rooms/${roomName}/meta`);
+
+  (function saveDeadlineOnce() {
+    const mi = JSON.parse(localStorage.getItem('meetingInfo')) || {};
+    if (!mi.deadline) return; // 설정 안 했으면 패스
+
+    // DB에 deadline이 없을 때만 기록 (여러 사용자 동시 접속 중복 방지)
+    const deadlinePathRef = firebaseRef(db, `rooms/${roomName}/meta/deadline`);
+    window.firebaseOnValue(deadlinePathRef, (snap) => {
+      const cur = snap.val();
+      if (cur == null) {
+        // set/update로 기록 (동적 import로 update 함수 사용)
+        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js")
+          .then(({ update }) => {
+            update(metaRef, { deadline: mi.deadline });
+          })
+          .catch(console.error);
+      }
+    }, { onlyOnce: true });
+  })();
+
+  function watchDeadlineAndRedirect() {
+    const deadlineRef = firebaseRef(db, `rooms/${roomName}/meta/deadline`);
+    window.firebaseOnValue(deadlineRef, (snap) => {
+      const dl = snap.val();
+      if (!dl) return;                    // 아직 미설정
+      if (Date.now() >= dl) {             // 마감 도달
+        window.location.href = `./result.html?room=${encodeURIComponent(roomName)}`;
+      }
+    });
+  }
+  watchDeadlineAndRedirect();
+  /* ────────────────────────────── */
+
   firebaseOnValue(availRef, snapshot => {
     // 1. 초기화
     document.querySelectorAll('.minute-slot').forEach(slot => {
@@ -227,8 +266,6 @@ document.addEventListener('DOMContentLoaded', () => {
           const bar = document.createElement('div');
           bar.classList.add('availability-bar');
 
-          //bar.classList.add(certainty); // 'definite' or 'maybe'
-
           // ✅ 겹치는 인원 수 기반 단계 계산
           const count = parseInt(group.dataset[certainty], 10);
           const level = Math.min(count, 4); // 최대 4단계까지만
@@ -255,8 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-
-
   // 입력 처리
   document.getElementById('availabilityForm').addEventListener('submit', e => {
     e.preventDefault();
@@ -276,6 +311,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const a = document.getElementById('meeting-link');
     a.href = meetingInfo.link;
     a.textContent = meetingInfo.link;
+  }
+
+  // (선택) 수동 전환 버튼
+  const goBtn = document.getElementById('goResultBtn');
+  if (goBtn) {
+    goBtn.addEventListener('click', () => {
+      window.location.href = `./result.html?room=${encodeURIComponent(roomName)}`;
+    });
   }
 });
 

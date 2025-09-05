@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>최종 결과 - 모이새</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <style>
+    .result-wrap { max-width: 800px; margin: 2rem auto; background:#fff; border-radius:12px; padding:1rem 1.2rem; }
+    .result-wrap h2 { margin: .2rem 0 1rem; }
+    .result-card { background:#fff9ea; border:1px solid #e7d9ad; border-radius:10px; padding:1rem; margin:.8rem 0; }
+    .share-row { display:flex; gap:.6rem; margin-top:1rem; }
+    .share-row button { padding:.6rem 1rem; border-radius:8px; border:none; background:#a7904d; color:#fff; cursor:pointer; }
+    .small { color:#555; font-size:.95rem; margin:.3rem 0 0; }
+  </style>
+</head>
+<body>
+  <div class="result-wrap" id="resultWrap">
+    <h2 id="title">최종 가능한 시간</h2>
+    <div id="everyoneBox" class="result-card"></div>
+    <div id="bestBox" class="result-card"></div>
+  </div>
+
+  <div class="result-wrap">
+    <div class="share-row">
+      <button id="btnSaveImage">이미지로 저장</button>
+      <button id="btnCopyLink">링크 복사</button>
+      <button id="btnNewMeeting">새 약속 만들기</button>
+    </div>
+    <p class="small">* “가능(확실+가능성)” 기준으로 전원 가능 시간대를 먼저 찾고, 없으면 최대 인원 시간대를 보여줍니다.</p>
+  </div>
+
+  <!-- html2canvas for image export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <!-- Firebase SDK (third_page와 동일 설정) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiVW_fvG5hXmt_6aMeDRwXVU19ByRO1iA",
+      authDomain: "moysay-d2606.firebaseapp.com",
+      databaseURL: "https://moysay-d2606-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "moysay-d2606",
+      storageBucket: "moysay-d2606.appspot.com",
+      messagingSenderId: "843998694219",
+      appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
+
+    // 파라미터 room
+    const params = new URLSearchParams(location.search);
+    const room = params.get('room') || (JSON.parse(localStorage.getItem('meetingInfo'))?.name ?? 'default-room');
+
+    // 제목
+    const meetName = JSON.parse(localStorage.getItem('meetingInfo'))?.name || room;
+    document.getElementById('title').textContent = `${meetName} - 최종 가능 시간`;
+
+    // DB에서 availability 모두 읽어 집계
+    const availRef = ref(db, `rooms/${room}/availabilities`);
+    onValue(availRef, (snap) => {
+      // const rows = snap.val() || {};
+      /**********************************/
+      const rows = snap.val() || {};
+      const keys = Object.keys(rows);
+      if (keys.length === 0) {
+        document.getElementById('everyoneBox').innerHTML = `<p>아직 등록된 시간이 없습니다.</p>`;
+        document.getElementById('bestBox').innerHTML = '';
+        return;
+      }
+/****************************/      
+
+
+      // 참가자 집합
+      const people = new Set();
+      for (const k in rows) people.add(rows[k].name);
+      const total = people.size;
+
+      // (A) 30분 그룹 키: "YYYY-MM-DD HH:MM"
+      //     각 그룹별로 'definite' + 'maybe'에 **사람 기준 1회** 카운트
+      const groupMap = new Map(); // key -> {definite, maybe}
+      function inc(key, type){
+        const cur = groupMap.get(key) || {definite:0, maybe:0};
+        cur[type] += 1;
+        groupMap.set(key, cur);
+      }
+
+      // 각 레코드에 대해 이름/날짜/시작~끝을 1분 단위로 돌기엔 무거우니,
+      // 30분 그룹 경계 기준으로 걸친 그룹만 1회 카운트
+      for (const k in rows) {
+        const { name, date, start, end, certainty } = rows[k];
+        const [sh, sm] = start.split(':').map(Number);
+        const [eh, em] = end.split(':').map(Number);
+        const sMin = sh*60+sm, eMin = eh*60+em;
+
+        for (let t = sMin; t < eMin; t += 30) {
+          const hh = String(Math.floor(t/60)).padStart(2,'0');
+          const mm = String(Math.floor(t%60/30)*30).padStart(2,'0'); // 00 or 30
+          const key = `${date} ${hh}:${mm}`;
+          inc(key, certainty === 'definite' ? 'definite' : 'maybe');
+        }
+      }
+
+      // everyone: (definite+maybe) === total
+      const flat = [...groupMap.entries()].map(([key, v]) => ({
+        key, totalCan: v.definite + v.maybe, definite: v.definite, maybe: v.maybe
+      })).sort((a,b)=>a.key.localeCompare(b.key));
+
+      const everyone = flat.filter(x => x.totalCan === total);
+      const best = everyone.length ? [] : (() => {
+        const maxCan = flat.reduce((m,x)=>Math.max(m,x.totalCan), 0);
+        return flat
+          .filter(x => x.totalCan === maxCan)
+          .sort((a,b)=> (b.definite - a.definite) || a.key.localeCompare(b.key));
+      })();
+
+      // 렌더
+      const $every = document.getElementById('everyoneBox');
+      const $best  = document.getElementById('bestBox');
+
+      if (everyone.length) {
+        $every.innerHTML = `
+          <h3>모든 참여자(${total}명) 가능한 시간대</h3>
+          <ul>${everyone.map(x=>`<li>${x.key} · (${x.totalCan}/${total})</li>`).join('')}</ul>`;
+        $best.innerHTML = '';
+      } else {
+        $every.innerHTML = `<h3>모든 참여자가 동시에 가능한 시간대는 없습니다</h3>`;
+        if (best.length) {
+          const maxCan = best[0].totalCan;
+          $best.innerHTML = `
+            <h3>가장 많은 인원 가능한 시간대 (${maxCan}/${total})</h3>
+            <ul>${best.map(x=>`<li>${x.key} · 확실함 ${x.definite}, 가능 ${x.maybe}</li>`).join('')}</ul>`;
+        } else {
+          $best.innerHTML = `<p>아직 등록된 시간이 없습니다.</p>`;
+        }
+      }
+    });
+
+    // 공유(이미지/링크)
+    document.getElementById('btnSaveImage').addEventListener('click', async () => {
+      const el = document.getElementById('resultWrap');
+      const canvas = await html2canvas(el, { scale: 2 });
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = 'moysay_result.png';
+      a.click();
+    });
+    document.getElementById('btnCopyLink').addEventListener('click', () => {
+      const url = `${location.origin}${location.pathname}?room=${encodeURIComponent(room)}`;
+      navigator.clipboard.writeText(url).then(()=>alert('링크가 복사되었습니다!'));
+    });
+    // 새 약속 만들기: 저장된 정보 초기화 후 첫 페이지(index.html)로 이동
+    document.getElementById('btnNewMeeting').addEventListener('click', () => {
+        localStorage.removeItem('selectedDates');
+        localStorage.removeItem('meetingInfo');
+        window.location.href = './index.html'; // 첫 페이지(달력 페이지)로 이동
+    });
+  </script>
+</body>
+</html>

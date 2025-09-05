@@ -133,32 +133,37 @@ header h1 {
   background-color: #fff5e1;
   border: 2px solid #a7904d;
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;   /* 세로 배치 */
+  align-items: stretch;     /* 자식들이 가로폭 맞춤 */
 }
 
 .memo-section textarea {
   width: 100%;
-  height: 100px;
+  height: 140px;            /* 높이를 조금 더 키움 (100 → 140) */
   font-size: 1rem;
   padding: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;   /* 버튼과 살짝 간격 */
   border-radius: 8px;
   border: 1px solid #ccc;
+  resize: none;
+  box-sizing: border-box;   /* padding 포함 계산 */
 }
 
 .memo-section button {
-  background-color: #a7904d;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-bottom: 1rem;
+  align-self: flex-start;   /* 버튼이 좌측에 딱 붙게 */
+  margin-bottom: 0.75rem;
 }
 
 .memo-section ul {
   list-style: none;
   padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 0.9rem;
 }
+
 
 .memo-section li {
   background-color: #fff;
