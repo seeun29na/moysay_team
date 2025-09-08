@@ -79,63 +79,198 @@
       const total = people.size;
 
       // (A) 30분 그룹 키: "YYYY-MM-DD HH:MM"
-      //     각 그룹별로 'definite' + 'maybe'에 **사람 기준 1회** 카운트
-      const groupMap = new Map(); // key -> {definite, maybe}
-      function inc(key, type){
-        const cur = groupMap.get(key) || {definite:0, maybe:0};
-        cur[type] += 1;
-        groupMap.set(key, cur);
-      }
-
-      // 각 레코드에 대해 이름/날짜/시작~끝을 1분 단위로 돌기엔 무거우니,
-      // 30분 그룹 경계 기준으로 걸친 그룹만 1회 카운트
-      for (const k in rows) {
-        const { name, date, start, end, certainty } = rows[k];
-        const [sh, sm] = start.split(':').map(Number);
-        const [eh, em] = end.split(':').map(Number);
-        const sMin = sh*60+sm, eMin = eh*60+em;
-
-        for (let t = sMin; t < eMin; t += 30) {
-          const hh = String(Math.floor(t/60)).padStart(2,'0');
-          const mm = String(Math.floor(t%60/30)*30).padStart(2,'0'); // 00 or 30
-          const key = `${date} ${hh}:${mm}`;
-          inc(key, certainty === 'definite' ? 'definite' : 'maybe');
+      //     각 그룹별로 'definite'/'maybe'를 사람(Set) 기준으로 누적해 이름까지 보관
+      const groupMap = new Map(); // key -> { definite:Set<string>, maybe:Set<string> }
+        const ensure = (key) => {
+          let cur = groupMap.get(key);
+          if (!cur) {
+            cur = { definite: new Set(), maybe: new Set() };
+            groupMap.set(key, cur);
+          }
+          return cur;
+        };
+        const mark = (key, type, name) => {
+          const cur = ensure(key);
+          cur[type].add(name);
+        };
+        
+        // 각 레코드에 대해 30분 경계 기준으로 걸친 그룹만 1회 처리
+        for (const k in rows) {
+          const { name, date, start, end, certainty } = rows[k];
+          const [sh, sm] = start.split(':').map(Number);
+          const [eh, em] = end.split(':').map(Number);
+          const sMin = sh * 60 + sm, eMin = eh * 60 + em;
+        
+          for (let t = sMin; t < eMin; t += 30) {
+            const hh = String(Math.floor(t / 60)).padStart(2, '0');
+            const mm = String(Math.floor((t % 60) / 30) * 30).padStart(2, '0'); // 00 or 30
+            const key = `${date} ${hh}:${mm}`;
+            mark(key, certainty === 'definite' ? 'definite' : 'maybe', name);
+          }
         }
-      }
+        
+        // flat: 렌더링용 배열 (이름 보존)
+        const flat = [...groupMap.entries()].map(([key, v]) => {
+          const definite = v.definite.size;
+          const maybe = v.maybe.size;
+          return {
+            key,                                      // "YYYY-MM-DD HH:MM"
+            date: key.split(' ')[0],                  // "YYYY-MM-DD"
+            time: key.split(' ')[1],                  // "HH:MM"
+            definite,
+            maybe,
+            totalCan: definite + maybe,
+            names: { 
+              definite: [...v.definite].sort(), 
+              maybe: [...v.maybe].sort()
+            }
+          };
+        }).sort((a, b) => a.key.localeCompare(b.key));
+        
+        /* ===== 연속 구간 병합 유틸 ===== */
+        const toMin = (hhmm) => {
+          const [h,m] = hhmm.split(':').map(Number);
+          return h*60 + m;
+        };
+        const fmt = (min) => {
+          const h = String(Math.floor(min/60)).padStart(2,'0');
+          const m = String(min%60).padStart(2,'0');
+          return `${h}:${m}`;
+        };
+        // signature: 동일한 사람 조합이면 같은 구간으로 본다
+        const sigOf = (x) => `D:${x.names.definite.join(',')}|M:${x.names.maybe.join(',')}`;
+        
+        /** 같은 날짜에서, 30분 간격으로 이어지면서 signature가 같은 항목을 1개 구간으로 병합 */
+        function mergeRanges(list) {
+          // 날짜별로 묶고, 시간 순 정렬되어 있다고 가정(flat 정렬됨)
+          const byDate = new Map();
+          for (const x of list) {
+            if (!byDate.has(x.date)) byDate.set(x.date, []);
+            byDate.get(x.date).push(x);
+          }
+          const out = [];
+          for (const [date, arr] of byDate.entries()) {
+            arr.sort((a,b)=>toMin(a.time)-toMin(b.time));
+            let cur = null;
+            for (const x of arr) {
+              const startMin = toMin(x.time);
+              const xSig = sigOf(x);
+              if (!cur) {
+                cur = {
+                  date,
+                  startMin,
+                  endMin: startMin + 30,
+                  totalCan: x.totalCan,
+                  definite: x.definite,
+                  maybe: x.maybe,
+                  names: x.names,
+                  sig: xSig,
+                };
+                continue;
+              }
+              // 바로 이어지고(signature 같고) 조합 동일하면 확장
+              if (cur.endMin === startMin && cur.sig === xSig) {
+                cur.endMin += 30;
+              } else {
+                out.push(cur);
+                cur = {
+                  date,
+                  startMin,
+                  endMin: startMin + 30,
+                  totalCan: x.totalCan,
+                  definite: x.definite,
+                  maybe: x.maybe,
+                  names: x.names,
+                  sig: xSig,
+                };
+              }
+            }
+            if (cur) out.push(cur);
+          }
+          // 표시는 시간/날짜 순
+          out.sort((a,b)=> (a.date===b.date ? a.startMin-b.startMin : a.date.localeCompare(b.date)));
+          return out;
+        }
+        
+        /* ===== everyone / best 계산 ===== */
+        // everyone: 모든 인원이 가능한 블록
+        const everyoneBlocks = flat.filter(x => x.totalCan === total);
+        // 병합된 연속 구간
+        const everyoneMerged = mergeRanges(everyoneBlocks);
 
-      // everyone: (definite+maybe) === total
-      const flat = [...groupMap.entries()].map(([key, v]) => ({
-        key, totalCan: v.definite + v.maybe, definite: v.definite, maybe: v.maybe
-      })).sort((a,b)=>a.key.localeCompare(b.key));
+        // 헬퍼: 불가능(= neither definite nor maybe)
+        const allNames = [...people]; // Set -> Array
+        function getUnavailableNames(r) {
+          const inDef = new Set(r.names.definite);
+          const inMay = new Set(r.names.maybe);
+          return allNames.filter(n => !inDef.has(n) && !inMay.has(n));
+        }
 
-      const everyone = flat.filter(x => x.totalCan === total);
-      const best = everyone.length ? [] : (() => {
-        const maxCan = flat.reduce((m,x)=>Math.max(m,x.totalCan), 0);
-        return flat
-          .filter(x => x.totalCan === maxCan)
-          .sort((a,b)=> (b.definite - a.definite) || a.key.localeCompare(b.key));
-      })();
+        let bestMerged = [];
+        if (!everyoneMerged.length) {
+          // ① 모든 30분 블록(flat)을 병합해서 '연속 구간' 목록으로 만든다
+          const mergedAll = mergeRanges(flat); // ← 전원 가능 여부 상관없이 전부 병합
+        
+          // ② 정렬: '가능 인원 수' ↓ → '확실 인원' ↓ → '구간 길이' ↓ → '시간' 순
+          const cmp = (a, b) =>
+            (b.totalCan - a.totalCan) ||
+            (b.definite - a.definite) ||
+            ((b.endMin - b.startMin) - (a.endMin - a.startMin)) ||
+            (a.date === b.date ? a.startMin - b.startMin : a.date.localeCompare(b.date));
+        
+          // ③ Top 3만 가져온다 (가능 인원 수가 5 → 4 → 4처럼 섞여도 정렬 기준대로 뽑힘)
+          bestMerged = mergedAll.sort(cmp).slice(0, 3);
+        }
 
-      // 렌더
-      const $every = document.getElementById('everyoneBox');
-      const $best  = document.getElementById('bestBox');
+        /* ===== 렌더 ===== */
+        const $every = document.getElementById('everyoneBox');
+        const $best  = document.getElementById('bestBox');
 
-      if (everyone.length) {
-        $every.innerHTML = `
-          <h3>모든 참여자(${total}명) 가능한 시간대</h3>
-          <ul>${everyone.map(x=>`<li>${x.key} · (${x.totalCan}/${total})</li>`).join('')}</ul>`;
-        $best.innerHTML = '';
-      } else {
-        $every.innerHTML = `<h3>모든 참여자가 동시에 가능한 시간대는 없습니다</h3>`;
-        if (best.length) {
-          const maxCan = best[0].totalCan;
-          $best.innerHTML = `
-            <h3>가장 많은 인원 가능한 시간대 (${maxCan}/${total})</h3>
-            <ul>${best.map(x=>`<li>${x.key} · 확실함 ${x.definite}, 가능 ${x.maybe}</li>`).join('')}</ul>`;
+        if (everyoneMerged.length) {
+          $every.innerHTML = `
+            <h3>모든 참여자(${total}명) 가능한 구간</h3>
+            <ul>
+              ${everyoneMerged.map(r => {
+                const unavailable = getUnavailableNames(r); // 전원 가능이면 빈 배열
+                return `
+                  <li>
+                    <div><b>${r.date} ${fmt(r.startMin)} ~ ${fmt(r.endMin)}</b> · (${r.totalCan}/${total})</div>
+                    <div>✅ 확실(${r.definite}) : ${r.names.definite.join(', ') || '—'}</div>
+                    <div>❓ 가능(${r.maybe}) : ${r.names.maybe.join(', ') || '—'}</div>
+                    ${unavailable.length ? `<div>🚫 불가(${unavailable.length}) : ${unavailable.join(', ')}</div>` : ``}
+                  </li>
+                `;
+              }).join('')}
+            </ul>
+          `;
+          $best.innerHTML = '';
         } else {
-          $best.innerHTML = `<p>아직 등록된 시간이 없습니다.</p>`;
+          $every.innerHTML = `<h3>모든 참여자가 동시에 가능한 구간은 없습니다</h3>`;
+          if (bestMerged.length) {
+            const maxCan = bestMerged[0].totalCan;
+            $best.innerHTML = `
+              <h3>가장 많은 인원 가능한 구간 (Top 3) — ${maxCan}/${total}</h3>
+              <ol>
+                ${bestMerged.map(r => {
+                  const unavailable = getUnavailableNames(r);
+                  return `
+                    <li>
+                      <div><b>${r.date} ${fmt(r.startMin)} ~ ${fmt(r.endMin)}</b> · (${r.totalCan}/${total})</div>
+                      <div>✅ 확실(${r.definite}) : ${r.names.definite.join(', ') || '—'}</div>
+                      <div>❓ 가능(${r.maybe}) : ${r.names.maybe.join(', ') || '—'}</div>
+                      ${unavailable.length ? `<div>🚫 불가(${unavailable.length}) : ${unavailable.join(', ')}</div>` : ``}
+                    </li>
+                  `;
+                }).join('')}
+              </ol>
+            `;
+          } else {
+            $best.innerHTML = `<p>아직 등록된 시간이 없습니다.</p>`;
+          }
         }
-      }
+
+  
+  
     });
 
     // 공유(이미지/링크)
