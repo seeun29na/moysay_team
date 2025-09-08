@@ -7,20 +7,72 @@
 
   <!-- 공통 스타일 -->
   <link rel="stylesheet" href="styles.css" />
+
+  <style>
+    /* ===== 좌측 레일: 좌하단 고정 + 내부 스크롤 ===== */
+    .left-rail{
+      position: fixed;
+      left: 16px;
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      width: min(92vw, 320px);
+      display: flex;
+      flex-direction: column-reverse;        /* 아래(버튼)부터 위로 쌓기 */
+      gap: 12px;
+      z-index: 3000;
+      max-height: calc(100vh - 32px);        /* 화면 높이 안에서만 */
+      overflow-y: auto;                       /* 레일 자체 스크롤 */
+      -webkit-overflow-scrolling: touch;
+      padding-right: 2px;                     /* 스크롤바 여백 */
+    }
+
+    /* 레일 안에 들어온 패널들은 고정 해제 (styles.css 덮어쓰기) */
+    .left-rail .memo-section,
+    .left-rail #overlap-panel{
+      position: relative !important;
+      inset: auto !important;
+      width: 100% !important;
+      z-index: auto !important;
+      max-height: none;                       /* 패널은 자동 높이 */
+      overflow: visible;
+    }
+
+    /* ===== 기부 버튼/모달 ===== */
+    .donate-fab{
+      align-self: flex-start;
+      padding:.75rem 1rem; border:none; border-radius:999px;
+      background:#a7904d; color:#fff; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
+    }
+    .donate-fab:active{ transform: translateY(1px); }
+
+    .modal-backdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.35);
+      display:none; align-items:center; justify-content:center; z-index:4000;
+    }
+    .modal-backdrop.show{ display:flex; }
+    .modal-box{
+      width:min(90vw,420px); background:#fff; border-radius:12px;
+      border:1px solid #e7d9ad; padding:1rem 1.2rem; box-shadow:0 10px 30px rgba(0,0,0,.2);
+    }
+    .modal-box h3{ margin:0 0 .6rem; }
+    .modal-box p{ margin:0 0 1rem; line-height:1.5; }
+    .modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
+    .btn{ padding:.55rem .9rem; border:none; border-radius:8px; cursor:pointer; }
+    .btn-primary{ background:#a7904d; color:#fff; }
+    .btn-ghost{ background:#f2f2f2; color:#333; }
+  </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <!-- [UI] 상단 제목: pill 톤으로 통일 -->
+      <!-- [UI] 상단 제목 -->
       <h1 id="meeting-title" class="pill pill--solid"></h1>
     </header>
 
-    <!-- [UI] 입력 패널: 겹치는 사람 카드 톤 + outline 변주 -->
+    <!-- [UI] 입력 패널 -->
     <section class="panel panel--outline stack input-section" id="inputPanel">
-      <!-- [공통] 이름 입력 -->
       <input class="input" type="text" id="name" placeholder="이름을 입력하세요" />
 
-      <!-- [공통] 입력 방식 토글 + 확실성 라디오 -->
       <div class="panel-header">
         <div class="segmented" role="tablist" aria-label="입력 방식">
           <button id="segDrop" class="seg active" type="button" role="tab" aria-selected="true">드롭박스</button>
@@ -32,7 +84,6 @@
         </div>
       </div>
 
-      <!-- [드롭박스 모드] 셀렉트 + 등록 -->
       <div id="dropdownContent" class="panel-body">
         <form id="availabilityForm">
           <div class="time-picker-inline">
@@ -51,14 +102,12 @@
             </div>
           </div>
 
-          <!-- [드롭박스 전용] 날짜 선택 -->
           <select id="date" class="input" required></select>
 
           <button class="btn" type="submit">시간 등록</button>
         </form>
       </div>
 
-      <!-- [드래그 모드] 안내 + 액션 -->
       <div id="dragContent" class="panel-body hidden">
         <p class="drag-row hint">시간표에서 원하는 시간을 드래그하세요!<br>(30분 단위, 다시 드래그하면 해제됩니다🙂)</p>
         <div class="drag-actions">
@@ -67,22 +116,13 @@
         </div>
       </div>
 
-      <!-- [공통] 결과 화면 이동 -->
       <button id="goResultBtn" class="btn btn--ghost" style="margin-top:.6rem;">결과 화면 열기</button>
     </section>
 
-    <!-- [UI] 메모 패널(좌하단 고정): soft 변주 -->
-    <section class="panel panel--soft memo-section">
-      <h3 class="panel__title">📌 의견 메모</h3>
-      <textarea id="memoInput" class="input" placeholder="약속에 대해 자유롭게 의견을 남겨주세요..."></textarea>
-      <button id="saveMemoBtn" class="btn">메모 저장</button>
-      <ul id="memoList"></ul>
-    </section>
-
-    <!-- [UI] 스케줄 영역(중앙): JS가 날짜 칼럼/슬롯 동적 생성 -->
+    <!-- [UI] 스케줄 영역 -->
     <section class="schedule"></section>
 
-    <!-- [UI] 약속 정보 패널(우하단 고정): dash 변주 -->
+    <!-- [UI] 약속 정보 패널(우하단 고정) -->
     <section id="meeting-info" class="panel panel--dash meeting-info">
       <h2 id="meeting-name" class="panel__title" style="margin-bottom:.25rem;"></h2>
       <p id="meeting-location" style="margin:.25rem 0 .5rem;"></p>
@@ -90,26 +130,79 @@
     </section>
   </div>
 
-  <!-- [UI] 겹치는 사람 패널(좌측) : 기본 톤 -->
-  <aside id="overlap-panel" class="panel overlap-panel">
-    <h3 class="panel__title">겹치는 사람</h3>
-    <div class="op-time">—</div>
-    <div class="op-group">
-      <span class="pill pill--solid">확실함</span>
-      <ul id="op-list-sure"></ul>
-    </div>
-    <div class="op-group">
-      <span class="pill pill--line">가능성</span>
-      <ul id="op-list-maybe"></ul>
-    </div>
-  </aside>
+  <!-- ===== 좌측 레일: (아래) 기부 버튼 / (위) 메모 / (더 위) 겹치는 사람 ===== -->
+  <div class="left-rail">
+    <!-- 기부 버튼 -->
+    <button class="donate-fab" id="donateFab" aria-haspopup="dialog" aria-controls="donateModal">기부하기</button>
 
-  <!-- [광고] 하단 고정 배너 자리(연동 전용 placeholder) -->
-  <div class="ad-banner">
-    <p>📢 광고 영역 (이곳에 광고가 들어갑니다)</p>
+    <!-- 메모 패널 -->
+    <section class="panel panel--soft memo-section">
+      <h3 class="panel__title">📌 의견 메모</h3>
+      <textarea id="memoInput" class="input" placeholder="약속에 대해 자유롭게 의견을 남겨주세요..."></textarea>
+      <button id="saveMemoBtn" class="btn">메모 저장</button>
+      <ul id="memoList"></ul>
+    </section>
+
+    <!-- 겹치는 사람 패널 -->
+    <aside id="overlap-panel" class="panel overlap-panel">
+      <h3 class="panel__title">겹치는 사람</h3>
+      <div class="op-time">—</div>
+      <div class="op-group">
+        <span class="pill pill--solid">확실함</span>
+        <ul id="op-list-sure"></ul>
+      </div>
+      <div class="op-group">
+        <span class="pill pill--line">가능성</span>
+        <ul id="op-list-maybe"></ul>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 기부 모달 -->
+  <div class="modal-backdrop" id="donateModal" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+    <div class="modal-box">
+      <h3 id="donateTitle">기부 안내</h3>
+      <p>
+        기부를 원하신다면<br/>
+        <strong>계좌 번호: 12345678</strong> 로 입금해주세요.<br/>
+        감사합니다!
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="donateClose">닫기</button>
+        <button class="btn btn-primary" id="donateCopy">계좌 복사</button>
+      </div>
+    </div>
   </div>
 
   <!-- 기능 스크립트: Firebase 모듈 import 포함 -->
   <script type="module" src="script.js"></script>
+
+  <!-- 모달 동작 -->
+  <script>
+    (function(){
+      const $fab = document.getElementById('donateFab');
+      const $modal = document.getElementById('donateModal');
+      const $close = document.getElementById('donateClose');
+      const $copy = document.getElementById('donateCopy');
+      const ACCOUNT_TEXT = '계좌 번호 12345678';
+
+      const openModal = () => $modal.classList.add('show');
+      const closeModal = () => $modal.classList.remove('show');
+
+      $fab.addEventListener('click', openModal);
+      $close.addEventListener('click', closeModal);
+      $modal.addEventListener('click', (e)=>{ if(e.target===$modal) closeModal(); });
+      window.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && $modal.classList.contains('show')) closeModal(); });
+
+      $copy.addEventListener('click', async ()=>{
+        try{
+          await navigator.clipboard.writeText('12345678');
+          alert(`${ACCOUNT_TEXT}가 복사되었습니다!`);
+        }catch{
+          alert('복사에 실패했습니다. 직접 입력해주세요: 12345678');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

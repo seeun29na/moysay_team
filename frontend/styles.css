@@ -279,3 +279,16 @@ header h1 { font-size: 24px; }      /* 상단 큰 제목 */
   box-sizing: border-box;       /* ⬅ 패딩/보더 포함해서 100% 계산 */
 }
 
+/* (third_page용) 일부 패널 축소 */
+.input-section,
+.memo-section,
+.overlap-panel,
+.meeting-info {
+  transform: scale(0.73);   /* 크기 70% */
+  transform-origin: top left;
+}
+
+.day-column {
+  transform: scale(0.8);   /* 크기 80% */
+  transform-origin: top left;
+}
