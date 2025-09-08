@@ -291,6 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // 드롭박스 시간 선택 & 보드 슬롯 생성
   populateTimeSelectors();
   generateSlots();
+  bindOverlapHover(); // ★ 추가
+
 
   // ===== Firebase =====
   const db = window.firebaseDB;
@@ -385,7 +387,16 @@ document.addEventListener('DOMContentLoaded', () => {
           bar.style.width = `${width}%`;
           bar.title = `${start}~${end} ${name}`;
 
+          bar.dataset.name = name;          // ★ 추가
+          bar.dataset.certainty = certainty; // ★ 추가   
+
+
           group.appendChild(bar);
+
+          for (const [date] of tempSelection.entries()) repaintDateTemp(date);
+
+          // ★ 새 DOM에도 hover 이벤트 부여
+          bindOverlapHover();
         }
       });
     });
@@ -465,3 +476,61 @@ window.addEventListener('DOMContentLoaded', () => {
   const title = document.getElementById('meeting-title');
   if (info && info.name) title.textContent = info.name;
 });
+
+
+// ===== 겹치는 사람 패널 =====
+let panelEl, panelTime, listSure, listMaybe;
+function initOverlapPanel(){
+  panelEl   = document.getElementById('overlap-panel');
+  panelTime = panelEl?.querySelector('.op-time') || null;
+  listSure  = document.getElementById('op-list-sure') || null;
+  listMaybe = document.getElementById('op-list-maybe') || null;
+}
+
+function showOverlapForGroup(groupEl){
+  if (!panelEl) { initOverlapPanel(); }
+  if (!panelEl) return;
+
+  const date  = groupEl.closest('.day-column')?.dataset.date || '';
+  const start = groupEl.dataset.start || '';
+
+  const sure  = new Set();
+  const maybe = new Set();
+
+  // 1) availability-bar에서 수집
+  groupEl.querySelectorAll('.availability-bar').forEach(bar=>{
+    const nm = (bar.dataset.name || '').trim();
+    const ct = bar.dataset.certainty;
+    if (!nm || !ct) return;
+    (ct === 'definite' ? sure : maybe).add(nm);
+  });
+
+  // 2) fallback: minute-slot tooltip 파싱
+  if (sure.size === 0 && maybe.size === 0) {
+    groupEl.querySelectorAll('.minute-slot').forEach(ms=>{
+      const names = (ms.dataset.tooltip || '').split(',').map(s=>s.trim()).filter(Boolean);
+      if (!names.length) return;
+      const isDef = ms.classList.contains('busy-definite');
+      (isDef ? sure : maybe).forEach?.(() => {}); // no-op to keep symmetry
+      names.forEach(n => (isDef ? sure : maybe).add(n));
+    });
+  }
+
+  if (panelTime) panelTime.textContent = `${date} ${start} 기준 (확실 ${sure.size} · 가능 ${maybe.size})`;
+  if (listSure)  listSure.innerHTML    = sure.size  ? [...sure].sort().map(n=>`<li>${n}</li>`).join('')  : '<li>없음</li>';
+  if (listMaybe) listMaybe.innerHTML   = maybe.size ? [...maybe].sort().map(n=>`<li>${n}</li>`).join('') : '<li>없음</li>';
+}
+
+function bindOverlapHover(){
+  const groups = document.querySelectorAll('.day-column .slot-group');
+  groups.forEach(g=>{
+    // 중복 바인딩 방지
+    if (!g.dataset._opBound) {
+      g.addEventListener('mouseenter', ()=> showOverlapForGroup(g));
+      g.addEventListener('click',      ()=> showOverlapForGroup(g));
+      g.dataset._opBound = '1';
+    }
+  });
+}
+// DOM 준비되면 패널 참조 한번 초기화
+document.addEventListener('DOMContentLoaded', initOverlapPanel);

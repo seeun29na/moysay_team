@@ -311,3 +311,24 @@ header h1 {
 
 /* 3) 내부 작은 드래그 그리드(미사용) 숨김 */
 #dragGrid { display: none !important; }
+
+
+.overlap-panel{
+  position: absolute; left: 2rem; top: 22rem; /* 페이지 레이아웃에 맞게 조정 */
+  width: 260px; background:#fff7e1; border:1px solid #e2c990;
+  border-radius: 12px; padding: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  font-size: 14px; z-index: 5;          /* 메모/슬롯 위로 올라오게 */
+}
+.overlap-panel h3{ margin: 0 0 8px; font-size: 16px; color:#6f4e1f; }
+.op-time{ margin: 6px 0 10px; color:#8a6a3b; }
+.op-group{ margin: 10px 0; }
+.op-badge{ display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; margin-bottom:6px; }
+.op-sure{ background:#ffe3a7; border:1px solid #e0b858; }
+.op-maybe{ background:#e9f0ff; border:1px solid #98b4ff; }
+#op-list-sure li, #op-list-maybe li{ margin:3px 0; }
+
+
+/* 메모 패널과 겹치면 아래처럼 살짝 올려 두거나, 메모 위치를 더 아래로 */
+@media (min-width: 1200px){
+  .overlap-panel{ top: 16rem; }  /* 필요 시 */
+}

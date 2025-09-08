@@ -169,7 +169,59 @@
     window.firebaseOnValue = onValue;
   </script>
 
+ <!-- ★ 추가: 2페이지에서 저장한 meetingInfo를 패널/헤더에 뿌리기 -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      let info = {};
+      try { info = JSON.parse(localStorage.getItem('meetingInfo')) || {}; }
+      catch { info = {}; }
+
+      const name = info.name || '';
+      const location = info.location || '';
+      const link = info.link || '';
+
+      // 상단 제목
+      const titleEl = document.getElementById('meeting-title');
+      if (titleEl) titleEl.textContent = name ? `약속: ${name}` : '약속';
+
+      // 오른쪽 고정 패널
+      const nameEl = document.getElementById('meeting-name');
+      const locEl  = document.getElementById('meeting-location');
+      const linkEl = document.getElementById('meeting-link');
+
+      if (nameEl) nameEl.textContent = name || '이름 미정';
+      if (locEl)  locEl.textContent  = location ? `장소: ${location}` : '장소 미정';
+
+      if (linkEl) {
+        if (link) {
+          const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+          linkEl.textContent = '장소 링크 열기';
+          linkEl.href = normalized;
+          linkEl.style.display = '';
+        } else {
+          linkEl.textContent = '';
+          linkEl.removeAttribute('href');
+          linkEl.style.display = 'none';
+        }
+      }
+    });
+  </script>
+
   <!-- 기존 스크립트: Firebase 연동 및 UI 업데이트 포함 -->
   <script src="script.js"></script>
+
+  <!-- 겹치는 사람 패널 (오른쪽 컨트롤 아래나 근처에 배치) -->
+  <aside id="overlap-panel" class="overlap-panel">
+    <h3>겹치는 사람</h3>
+    <div class="op-time">—</div>
+    <div class="op-group">
+      <span class="op-badge op-sure">확실함</span>
+      <ul id="op-list-sure"></ul>
+    </div>
+    <div class="op-group">
+      <span class="op-badge op-maybe">가능성</span>
+      <ul id="op-list-maybe"></ul>
+    </div>
+  </aside>
 </body>
 </html>
