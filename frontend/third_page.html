@@ -16,7 +16,7 @@
       bottom: calc(16px + env(safe-area-inset-bottom, 0px));
       width: min(92vw, 320px);
       display: flex;
-      flex-direction: column-reverse;
+      flex-direction: column-reverse; /* 아래(버튼)부터 위로 쌓기 */
       gap: 12px;
       z-index: 3000;
 
@@ -35,7 +35,7 @@
       z-index: auto !important;
     }
 
-    /* (선택) 패널 내부만 스크롤되게 하려면 */
+    /* 3) 패널 내부만 스크롤되게 (레일은 스크롤 없음) */
     .left-rail .panel{
       max-height: 36vh;
       overflow: auto;
@@ -43,7 +43,7 @@
 
     /* ===== 기부 버튼/모달 ===== */
     .donate-fab{
-      align-self: flex-start;
+      align-self: flex-start;                    /* 레일 안에서 좌측 정렬 */
       padding:.75rem 1rem; border:none; border-radius:999px;
       background:#a7904d; color:#fff; font-weight:600; cursor:pointer;
       box-shadow:0 6px 18px rgba(0,0,0,.15);
@@ -70,11 +70,11 @@
 <body>
   <div class="container">
     <header>
-      <!-- [UI] 상단 제목 -->
+      <!-- 상단 제목 -->
       <h1 id="meeting-title" class="pill pill--solid"></h1>
     </header>
 
-    <!-- [UI] 입력 패널 -->
+    <!-- 입력 패널 -->
     <section class="panel panel--outline stack input-section" id="inputPanel">
       <input class="input" type="text" id="name" placeholder="이름을 입력하세요" />
 
@@ -124,10 +124,10 @@
       <button id="goResultBtn" class="btn btn--ghost" style="margin-top:.6rem;">결과 화면 열기</button>
     </section>
 
-    <!-- [UI] 스케줄 영역 -->
+    <!-- 스케줄 영역 -->
     <section class="schedule"></section>
 
-    <!-- [UI] 약속 정보 패널(우하단 고정) -->
+    <!-- 약속 정보 패널(우하단 고정) -->
     <section id="meeting-info" class="panel panel--dash meeting-info">
       <h2 id="meeting-name" class="panel__title" style="margin-bottom:.25rem;"></h2>
       <p id="meeting-location" style="margin:.25rem 0 .5rem;"></p>
@@ -179,10 +179,111 @@
     </div>
   </div>
 
-  <!-- 기능 스크립트: Firebase 모듈 import 포함 -->
+  <!-- Firebase SDK 및 메모 연동 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiVW_fvG5hXmt_6aMeDRwXVU19ByRO1iA",
+      authDomain: "moysay-d2606.firebaseapp.com",
+      databaseURL: "https://moysay-d2606-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "moysay-d2606",
+      storageBucket: "moysay-d2606.appspot.com",
+      messagingSenderId: "843998694219",
+      appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // roomName을 localStorage에서 읽어와서 방별 경로로 저장/조회
+    const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo') || '{}');
+    const roomName = meetingInfo.name || 'default-room';
+    const memoRef = ref(db, `rooms/${roomName}/memos`);
+
+    // DOM이 준비되면 실행
+    window.addEventListener("DOMContentLoaded", () => {
+      // 메모 저장
+      document.getElementById("saveMemoBtn")?.addEventListener("click", () => {
+        const content = document.getElementById("memoInput")?.value.trim() || "";
+        const name = document.getElementById("name")?.value || "익명";
+        if (!content) return;
+
+        push(memoRef, {
+          name,
+          content,
+          timestamp: new Date().toISOString()
+        });
+
+        const ta = document.getElementById("memoInput");
+        if (ta) ta.value = "";
+      });
+
+      // 메모 불러오기(실시간)
+      onValue(memoRef, (snapshot) => {
+        const memoList = document.getElementById("memoList");
+        if (!memoList) return;
+        memoList.innerHTML = "";
+
+        snapshot.forEach((child) => {
+          const { name, content } = child.val();
+          const li = document.createElement("li");
+          li.textContent = `[${name}] ${content}`;
+          memoList.appendChild(li);
+        });
+      });
+    });
+
+    // 전역 노출(필요시 다른 스크립트에서 사용)
+    window.firebaseDB = db;
+    window.firebaseRef = ref;
+    window.firebasePush = push;
+    window.firebaseOnValue = onValue;
+  </script>
+
+  <!-- meetingInfo(2페이지 저장) → 헤더/우측 패널 반영 -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      let info = {};
+      try { info = JSON.parse(localStorage.getItem('meetingInfo')) || {}; }
+      catch { info = {}; }
+
+      const name = info.name || '';
+      const location = info.location || '';
+      const link = info.link || '';
+
+      // 상단 제목
+      const titleEl = document.getElementById('meeting-title');
+      if (titleEl) titleEl.textContent = name ? `약속: ${name}` : '약속';
+
+      // 오른쪽 고정 패널
+      const nameEl = document.getElementById('meeting-name');
+      const locEl  = document.getElementById('meeting-location');
+      const linkEl = document.getElementById('meeting-link');
+
+      if (nameEl) nameEl.textContent = name || '이름 미정';
+      if (locEl)  locEl.textContent  = location ? `장소: ${location}` : '장소 미정';
+
+      if (linkEl) {
+        if (link) {
+          const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+          linkEl.textContent = '장소 링크 열기';
+          linkEl.href = normalized;
+          linkEl.style.display = '';
+        } else {
+          linkEl.textContent = '';
+          linkEl.removeAttribute('href');
+          linkEl.style.display = 'none';
+        }
+      }
+    });
+  </script>
+
+  <!-- 기존 기능 스크립트(타임테이블/겹치는 사람 등) -->
   <script type="module" src="script.js"></script>
 
-  <!-- 모달 동작 -->
+  <!-- 기부 모달 동작 -->
   <script>
     (function(){
       const $fab = document.getElementById('donateFab');
@@ -194,12 +295,12 @@
       const openModal = () => $modal.classList.add('show');
       const closeModal = () => $modal.classList.remove('show');
 
-      $fab.addEventListener('click', openModal);
-      $close.addEventListener('click', closeModal);
-      $modal.addEventListener('click', (e)=>{ if(e.target===$modal) closeModal(); });
+      $fab?.addEventListener('click', openModal);
+      $close?.addEventListener('click', closeModal);
+      $modal?.addEventListener('click', (e)=>{ if(e.target===$modal) closeModal(); });
       window.addEventListener('keydown',(e)=>{ if(e.key==='Escape' && $modal.classList.contains('show')) closeModal(); });
 
-      $copy.addEventListener('click', async ()=>{
+      $copy?.addEventListener('click', async ()=>{
         try{
           await navigator.clipboard.writeText('12345678');
           alert(`${ACCOUNT_TEXT}가 복사되었습니다!`);
@@ -209,5 +310,12 @@
       });
     })();
   </script>
+
+  <!-- 광고 배너 자리 -->
+  <div class="ad-banner">
+    <p>📢 광고 영역 (이곳에 광고가 들어갑니다)</p>
+  </div>
+
 </body>
 </html>
+
