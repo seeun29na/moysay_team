@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>thirdpage - 모이새 약속 잡기</title>
-  
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,44 +12,65 @@
       <h1 id="meeting-title"></h1>
     </header>
 
-    <section class="input-section">
-      <form id="availabilityForm">
-        <!-- 1) 이름 -->
-        <input type="text" id="name" placeholder="이름을 입력하세요" required />
+    <!-- ▽▽ 회색 네모(입력 패널) 하나 안에서 모드 전환 & 확실성 선택 ▽▽ -->
+    <section class="input-section" id="inputPanel">
+      <!-- 공통: 이름 입력 -->
+      <input type="text" id="name" placeholder="이름을 입력하세요" />
 
-        <!-- 2) 시간 선택: 시작 -->
-        <div class="time-picker-inline">
-          <label for="startHour">시작 시간:</label>
-          <div class="time-select-group">
-            <select id="startHour" required></select> :
-            <select id="startMinute" required></select>
-          </div>
+      <!-- 공통: 입력 방식 + 확실성 -->
+      <div class="panel-header">
+        <div class="segmented" role="tablist" aria-label="입력 방식">
+          <button id="segDrop" class="seg active" type="button" role="tab" aria-selected="true">드롭박스</button>
+          <button id="segDrag" class="seg" type="button" role="tab" aria-selected="false">드래그</button>
         </div>
-
-        <!-- 3) 시간 선택: 종료 -->
-        <div class="time-picker-inline">
-          <label for="endHour">종료 시간:</label>
-          <div class="time-select-group">
-            <select id="endHour" required></select> :
-            <select id="endMinute" required></select>
-          </div>
+        <div class="certainty-inline" aria-label="확실성 선택">
+          <label><input type="radio" name="inlineCertainty" value="definite" checked> 확실함</label>
+          <label><input type="radio" name="inlineCertainty" value="maybe"> 가능성 있음</label>
         </div>
+      </div>
 
-        <!-- 4) 날짜 선택 -->
-        <select id="date" required></select>
+      <!-- 드롭박스 모드 -->
+      <div id="dropdownContent" class="panel-body">
+        <form id="availabilityForm">
+          <div class="time-picker-inline">
+            <label for="startHour">시작 시간:</label>
+            <div class="time-select-group">
+              <select id="startHour" required></select> :
+              <select id="startMinute" required></select>
+            </div>
+          </div>
 
-        <!-- 5) 확실성 -->
-        <select id="certainty">
-          <option value="definite">확실함</option>
-          <option value="maybe">가능성 있음</option>
-        </select>
+          <div class="time-picker-inline">
+            <label for="endHour">종료 시간:</label>
+            <div class="time-select-group">
+              <select id="endHour" required></select> :
+              <select id="endMinute" required></select>
+            </div>
+          </div>
 
-        <button type="submit">시간 등록</button>
-      </form>
-      <button id="goResultBtn" style="margin-top:.5rem;">결과 화면 열기</button>
+          <!-- 날짜 선택(드롭박스 모드만) -->
+          <select id="date" required></select>
+
+          <!-- 확실성 select는 삭제됨(라디오만 사용) -->
+
+          <button type="submit">시간 등록</button>
+        </form>
+      </div>
+
+      <!-- 드래그 모드: 날짜 선택 드롭다운 없음 -->
+      <div id="dragContent" class="panel-body hidden">
+        <p class="drag-row hint">시간표에서 원하는 날짜 칼럼을 드래그하면 칸이 켜집니다(30분 단위, 다시 드래그하면 해제).</p>
+        <div class="drag-actions">
+          <button id="dragClear" type="button">선택 지우기</button>
+          <button id="dragSave" type="button">드래그 선택 저장</button>
+        </div>
+      </div>
+
+      <!-- 공통: 결과 화면 버튼 -->
+      <button id="goResultBtn" style="margin-top:.6rem;">결과 화면 열기</button>
     </section>
+    <!-- △△ 회색 네모(입력 패널) 끝 △△ -->
 
-    <!-- 의견 메모장 -->
     <!-- 의견 메모장 (왼쪽 하단 고정) -->
     <section class="memo-section"
             style="position:fixed; bottom:1rem; left:1rem;
@@ -72,8 +92,7 @@
       </ul>
     </section>
 
-    
-    <!-- ▼ 스케줄 영역: JS가 동적 생성합니다 ▼ -->
+    <!-- ▼ 스케줄 영역: JS가 동적 생성 -->
     <section class="schedule"></section>
 
     <!-- 고정 표시 패널 -->
@@ -117,8 +136,7 @@
       // 메모 저장
       document.getElementById("saveMemoBtn").addEventListener("click", () => {
         const content = document.getElementById("memoInput").value.trim();
-        const name = document.getElementById("name").value || "익명";
-
+        const name = document.getElementById("name")?.value || "익명";
         if (content === "") return;
 
         push(memoRef, {
@@ -144,13 +162,12 @@
       });
     });
 
-    // 다른 스크립트에서도 쓸 수 있게 등록 (선택 사항)
+    // 다른 스크립트에서도 쓸 수 있게 등록
     window.firebaseDB = db;
     window.firebaseRef = ref;
     window.firebasePush = push;
     window.firebaseOnValue = onValue;
   </script>
-
 
   <!-- 기존 스크립트: Firebase 연동 및 UI 업데이트 포함 -->
   <script src="script.js"></script>
