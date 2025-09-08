@@ -5,6 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>thirdpage - 모이새 약속 잡기</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- ▼ 기부 버튼/모달 스타일 -->
+  <style>
+    .donate-fab{
+      position:fixed; left:16px; bottom:16px;
+      z-index:9999; padding:.75rem 1rem; border:none; border-radius:999px;
+      background:#a7904d; color:#fff; font-weight:600; cursor:pointer;
+      box-shadow:0 6px 18px rgba(0,0,0,.15);
+    }
+    .donate-fab:active{ transform:translateY(1px); }
+
+    .modal-backdrop{
+      position:fixed; inset:0; background:rgba(0,0,0,.35);
+      display:none; align-items:center; justify-content:center; z-index:10000;
+    }
+    .modal-backdrop.show{ display:flex; }
+    .modal-box{
+      width:min(90vw,420px); background:#fff; border-radius:12px;
+      border:1px solid #e7d9ad; padding:1rem 1.2rem; box-shadow:0 10px 30px rgba(0,0,0,.2);
+    }
+    .modal-box h3{ margin:0 0 .6rem; }
+    .modal-box p{ margin:0 0 1rem; line-height:1.5; }
+    .modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
+    .btn{ padding:.55rem .9rem; border:none; border-radius:8px; cursor:pointer; }
+    .btn-primary{ background:#a7904d; color:#fff; }
+    .btn-ghost{ background:#f2f2f2; color:#333; }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -50,8 +77,6 @@
 
           <!-- 날짜 선택(드롭박스 모드만) -->
           <select id="date" required></select>
-
-          <!-- 확실성 select는 삭제됨(라디오만 사용) -->
 
           <button type="submit">시간 등록</button>
         </form>
@@ -108,6 +133,27 @@
     </section>
   </div>
 
+  <!-- ▼ 좌측 하단 기부하기 버튼 (같은 위치) -->
+  <button class="donate-fab" id="donateFab" aria-haspopup="dialog" aria-controls="donateModal">
+    기부하기
+  </button>
+
+  <!-- ▼ 기부 안내 모달 -->
+  <div class="modal-backdrop" id="donateModal" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+    <div class="modal-box">
+      <h3 id="donateTitle">기부 안내</h3>
+      <p>
+        기부를 원하신다면<br/>
+        <strong>계좌 번호: 12345678</strong> 로 입금해주세요.<br/>
+        진심으로 감사합니다!
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="donateClose">닫기</button>
+        <button class="btn btn-primary" id="donateCopy">계좌 복사</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK 및 설정 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -125,7 +171,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    //const memoRef = ref(db, 'memos');
+
     // roomName을 localStorage에서 읽어와서 방별 경로로 저장/조회
     const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo')) || {};
     const roomName = meetingInfo.name || 'default-room';
@@ -169,7 +215,7 @@
     window.firebaseOnValue = onValue;
   </script>
 
- <!-- ★ 추가: 2페이지에서 저장한 meetingInfo를 패널/헤더에 뿌리기 -->
+  <!-- ★ 추가: 2페이지에서 저장한 meetingInfo를 패널/헤더에 뿌리기 -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       let info = {};
@@ -223,5 +269,42 @@
       <ul id="op-list-maybe"></ul>
     </div>
   </aside>
+
+  <!-- ▼ 기부 모달 동작 -->
+  <script>
+    (function(){
+      const $fab = document.getElementById('donateFab');
+      const $modal = document.getElementById('donateModal');
+      const $close = document.getElementById('donateClose');
+      const $copy = document.getElementById('donateCopy');
+      const ACCOUNT_TEXT = '계좌 번호 12345678';
+
+      const openModal = () => { $modal.classList.add('show'); };
+      const closeModal = () => { $modal.classList.remove('show'); };
+
+      $fab.addEventListener('click', openModal);
+      $close.addEventListener('click', closeModal);
+
+      // 바깥 클릭 닫기
+      $modal.addEventListener('click', (e) => {
+        if (e.target === $modal) closeModal();
+      });
+
+      // ESC로 닫기
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
+      });
+
+      // 계좌 복사
+      $copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText('12345678');
+          alert(`${ACCOUNT_TEXT}가 복사되었습니다!`);
+        } catch {
+          alert('복사에 실패했습니다. 직접 입력해주세요: 12345678');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
