@@ -1,4 +1,67 @@
-// ===================== 유틸 =====================
+/* -----------------------------------------
+ * 1) Firebase 모듈 로드 & 초기화
+ * ----------------------------------------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+/** [Firebase 설정] */
+const firebaseConfig = {
+  apiKey: "AIzaSyCiVW_fvG5hXmt_6aMeDRwXVU19ByRO1iA",
+  authDomain: "moysay-d2606.firebaseapp.com",
+  databaseURL: "https://moysay-d2606-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "moysay-d2606",
+  storageBucket: "moysay-d2606.appspot.com",
+  messagingSenderId: "843998694219",
+  appId: "1:843998694219:web:219ec5ebdbf835c08076ce"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/** [공유] Firebase 유틸을 window에 노출(다른 코드와 호환) */
+window.firebaseDB = db;
+window.firebaseRef = ref;
+window.firebasePush = push;
+window.firebaseOnValue = onValue;
+
+/* -----------------------------------------
+ * 2) 페이지 상단/우하단 패널에 meetingInfo 반영
+ * ----------------------------------------- */
+window.addEventListener('DOMContentLoaded', () => {
+  let info = {};
+  try { info = JSON.parse(localStorage.getItem('meetingInfo')) || {}; }
+  catch { info = {}; }
+
+  const name = info.name || '';
+  const location = info.location || '';
+  const link = info.link || '';
+
+  // [상단 제목]
+  const titleEl = document.getElementById('meeting-title');
+  if (titleEl) titleEl.textContent = name ? `${name}` : '약속';
+
+  // [우하단 패널]
+  const nameEl = document.getElementById('meeting-name');
+  const locEl  = document.getElementById('meeting-location');
+  const linkEl = document.getElementById('meeting-link');
+
+  if (nameEl) nameEl.textContent = name || '이름 미정';
+  if (locEl)  locEl.textContent  = location ? `장소: ${location}` : '장소 미정';
+  if (linkEl) {
+    if (link) {
+      const normalized = /^https?:\/\//i.test(link) ? link : `https://${link}`;
+      linkEl.href = normalized;
+      linkEl.style.display = '';
+    } else {
+      linkEl.removeAttribute('href');
+      linkEl.style.display = 'none';
+    }
+  }
+});
+
+/* -----------------------------------------
+ * 3) 유틸 함수
+ * ----------------------------------------- */
 const toMinutes = (timeStr) => {
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
@@ -6,7 +69,7 @@ const toMinutes = (timeStr) => {
 const pad2 = (n) => String(n).padStart(2, "0");
 const minToHHMM = (mins) => `${pad2(Math.floor(mins/60))}:${pad2(mins%60)}`;
 
-// 결과 보드(세로) 강도 업데이트
+/** [강도 클래스 갱신] 선택/겹침 수에 따라 1~4단계 클래스 부여 */
 const updateIntensity = (groupDiv, countDefinite, countMaybe) => {
   groupDiv.classList.remove(
     "intensity-definite-1","intensity-definite-2","intensity-definite-3","intensity-definite-4",
@@ -20,7 +83,9 @@ const updateIntensity = (groupDiv, countDefinite, countMaybe) => {
   }
 };
 
-// ===================== 결과 보드(세로) 슬롯 생성 =====================
+/* -----------------------------------------
+ * 4) 시간 슬롯(세로 보드) 생성
+ * ----------------------------------------- */
 const generateSlots = () => {
   const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
   let startHour = 9, endHour = 22;
@@ -30,7 +95,7 @@ const generateSlots = () => {
     if (!isNaN(end))   endHour = end;
   }
 
-  const groupInterval = 30;
+  const groupInterval = 30; // [UI] 한 줄 = 30분
   document.querySelectorAll('.time-slots').forEach(container => {
     for (let h = startHour; h < endHour; h++) {
       for (let m = 0; m < 60; m += groupInterval) {
@@ -42,7 +107,7 @@ const generateSlots = () => {
         const baseTime = `${pad2(h)}:${pad2(m)}`;
         groupDiv.dataset.start = baseTime;
 
-        // 1분 단위 minute-slot (시각화용)
+        // [시각화] 1분 단위 slot(내부 채움용)
         for (let i = 0; i < groupInterval; i++) {
           const minutes = m + i;
           const hh = pad2(h + Math.floor(minutes / 60));
@@ -54,6 +119,7 @@ const generateSlots = () => {
           groupDiv.appendChild(minuteSlot);
         }
 
+        // [UI] 좌측 시간 라벨
         const label = document.createElement('span');
         label.classList.add('time-label');
         label.textContent = baseTime;
@@ -65,7 +131,9 @@ const generateSlots = () => {
   });
 };
 
-// ===================== 드롭박스 시간 선택(휠 지원) =====================
+/* -----------------------------------------
+ * 5) 드롭박스 시간 선택(휠 지원)
+ * ----------------------------------------- */
 const populateTimeSelectors = () => {
   const info = JSON.parse(localStorage.getItem('meetingInfo')) || {};
   let startHour = 0, endHour = 23;
@@ -81,12 +149,14 @@ const populateTimeSelectors = () => {
   const minuteOptions = Array.from({ length: 60 }, (_, i) =>
     `<option value="${i.toString().padStart(2,'0')}">${i.toString().padStart(2,'0')}</option>`
   ).join('');
+
   document.getElementById('startHour').innerHTML    = hourOptions;
   document.getElementById('endHour').innerHTML      = hourOptions;
   document.getElementById('startMinute').innerHTML  = minuteOptions;
   document.getElementById('endMinute').innerHTML    = minuteOptions;
 };
 
+/** [UX] 마우스 휠로 select 올렸다 내리기 */
 const bindWheelToSelect = (selectEl) => {
   if (!selectEl) return;
   selectEl.addEventListener('wheel', (e) => {
@@ -98,12 +168,23 @@ const bindWheelToSelect = (selectEl) => {
   }, { passive: false });
 };
 
-// ===================== 시간표 드래그(세로) - 임시 선택 누적 =====================
-const tempSelection = new Map(); // Map<date, Map<'HH:MM','definite'|'maybe'>>
-const getDateMap = (date) => { if (!tempSelection.has(date)) tempSelection.set(date, new Map()); return tempSelection.get(date); };
-const inlineCertainty = () => (document.querySelector('input[name="inlineCertainty"]:checked')?.value) || 'definite';
-const isDragMode = () => { const el = document.getElementById('dragContent'); return el && !el.classList.contains('hidden'); };
+/* -----------------------------------------
+ * 6) 드래그 선택(세로 보드) — 임시 선택 관리
+ * ----------------------------------------- */
+/** 날짜별 임시선택 저장소: Map<date, Map<'HH:MM','definite'|'maybe'>> */
+const tempSelection = new Map();
+const getDateMap = (date) => {
+  if (!tempSelection.has(date)) tempSelection.set(date, new Map());
+  return tempSelection.get(date);
+};
+const inlineCertainty = () =>
+  (document.querySelector('input[name="inlineCertainty"]:checked')?.value) || 'definite';
+const isDragMode = () => {
+  const el = document.getElementById('dragContent');
+  return el && !el.classList.contains('hidden');
+};
 
+/** [UI] 임시색 칠/해제 */
 const paintGroupTemp = (groupEl, status, on, name='') => {
   groupEl.classList.toggle('temp-definite', on && status === 'definite');
   groupEl.classList.toggle('temp-maybe',    on && status === 'maybe');
@@ -111,6 +192,7 @@ const paintGroupTemp = (groupEl, status, on, name='') => {
   else { delete groupEl.dataset.tempName; groupEl.title = ''; }
 };
 
+/** [UI] 특정 날짜 컬럼 전체 다시 칠하기(실시간 반영 후 유지) */
 const repaintDateTemp = (date) => {
   const dateMap = tempSelection.get(date) || new Map();
   document.querySelectorAll(`.day-column[data-date="${date}"] .slot-group`).forEach(g => {
@@ -121,10 +203,12 @@ const repaintDateTemp = (date) => {
   });
 };
 
+/** 드래그 상태 */
 const dragState = { dragging:false, date:null, mode:'add', status:'definite', anchorIdx:null, name:'' };
 const groupsOfColumn = (colEl) => Array.from(colEl.querySelectorAll('.slot-group'));
 const indexOfGroup  = (groups, groupEl) => groups.indexOf(groupEl);
 
+/** [핵심] 범위 적용(추가/삭제) */
 const applyRange = (date, groups, i1, i2, mode, status, name) => {
   const [s, e] = i1 <= i2 ? [i1, i2] : [i2, i1];
   const dateMap = getDateMap(date);
@@ -142,6 +226,7 @@ const applyRange = (date, groups, i1, i2, mode, status, name) => {
   }
 };
 
+/** [바인딩] 보드 드래그 동작 */
 const bindScheduleDrag = () => {
   const schedule = document.querySelector('.schedule');
   if (!schedule) return;
@@ -156,7 +241,7 @@ const bindScheduleDrag = () => {
     const colEl   = e.target.closest('.day-column');
     if (!groupEl || !colEl) return;
 
-    const date   = colEl.dataset.date;          // ⬅ 드래그한 컬럼의 날짜 자동 사용
+    const date   = colEl.dataset.date;                // ⬅ 드래그한 컬럼의 날짜 자동 사용
     const groups = groupsOfColumn(colEl);
     const idx    = indexOfGroup(groups, groupEl);
     const key    = groupEl.dataset.start;
@@ -177,7 +262,7 @@ const bindScheduleDrag = () => {
     const groupEl = e.target.closest('.slot-group');
     const colEl   = e.target.closest('.day-column');
     if (!groupEl || !colEl) return;
-    if (colEl.dataset.date !== dragState.date) return; // 다른 날짜로 넘어가면 무시
+    if (colEl.dataset.date !== dragState.date) return; // 다른 날짜면 무시
 
     const groups = groupsOfColumn(colEl);
     const idx    = indexOfGroup(groups, groupEl);
@@ -187,8 +272,7 @@ const bindScheduleDrag = () => {
   document.addEventListener('mouseup', () => { dragState.dragging = false; });
 };
 
-// 임시 선택을 30분 연속으로 묶어 저장
-// (교체) 모든 날짜의 임시 선택을 30분 연속 구간으로 묶어 한 번에 저장
+/** [저장] 임시선택 → 30분 연속 구간으로 묶어 DB push */
 const saveTempSelection = (availRef) => {
   const name = (document.getElementById('name')?.value || '').trim();
   if (!name) { alert('이름을 먼저 입력하세요.'); return; }
@@ -229,7 +313,6 @@ const saveTempSelection = (availRef) => {
     });
 
     totalRanges += ranges.length;
-    // 날짜별 임시 선택 지우고 화면에서 임시색 제거
     map.clear();
     repaintDateTemp(date);
   }
@@ -238,25 +321,24 @@ const saveTempSelection = (availRef) => {
   alert(`저장됨: 총 ${totalRanges}개 구간 — [${name}]`);
 };
 
-// (교체) 모든 날짜 임시 선택 전체 삭제
+/** [초기화] 임시선택 전체 삭제 + 화면 반영 */
 const clearTempSelection = () => {
-  for (const [date] of tempSelection.entries()) {
-    repaintDateTemp(date);
-  }
+  for (const [date] of tempSelection.entries()) { repaintDateTemp(date); }
   tempSelection.clear();
-  // 화면의 임시색 일괄 제거
   document.querySelectorAll('.slot-group').forEach(g=>{
     g.classList.remove('temp-definite','temp-maybe');
   });
 };
 
-// ===================== 페이지 초기화 =====================
+/* -----------------------------------------
+ * 7) 초기 렌더 및 Firebase 구독/쓰기
+ * ----------------------------------------- */
 document.addEventListener('DOMContentLoaded', () => {
   const selectedDates = JSON.parse(localStorage.getItem('selectedDates')) || [];
   const meetingInfo = JSON.parse(localStorage.getItem('meetingInfo')) || {};
   const roomName = meetingInfo.name || 'default-room';
 
-  // 날짜 셀렉트
+  /* [UI] 드롭다운 날짜 옵션 렌더 */
   const dateSelect = document.getElementById('date');
   dateSelect.innerHTML = '';
   selectedDates.forEach(ds => {
@@ -267,12 +349,12 @@ document.addEventListener('DOMContentLoaded', () => {
     dateSelect.appendChild(opt);
   });
 
-  // 결과 보드 컬럼
+  /* [UI] 날짜 컬럼 생성 (각 컬럼 자체도 .panel 톤으로 통일) */
   const scheduleEl = document.querySelector('.schedule');
   scheduleEl.innerHTML = '';
   selectedDates.forEach(ds => {
     const col = document.createElement('div');
-    col.classList.add('day-column');
+    col.classList.add('panel','day-column'); // ← 통일된 카드 스타일
     col.dataset.date = ds;
 
     const [, m, d] = ds.split('-');
@@ -288,24 +370,21 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleEl.appendChild(col);
   });
 
-  // 드롭박스 시간 선택 & 보드 슬롯 생성
+  /* [UI] 드롭박스 시간 셀렉트 & 슬롯 생성 */
   populateTimeSelectors();
   generateSlots();
-  bindOverlapHover(); // ★ 추가
+  bindOverlapHover();
 
+  /* ===== Firebase 경로 ===== */
+  const availRef = ref(db, `rooms/${roomName}/availabilities`);
+  const metaRef  = ref(db, `rooms/${roomName}/meta`);
 
-  // ===== Firebase =====
-  const db = window.firebaseDB;
-  const { firebaseRef, firebasePush, firebaseOnValue } = window;
-  const availRef = firebaseRef(db, `rooms/${roomName}/availabilities`);
-
-  // 마감 저장/감시
-  const metaRef = firebaseRef(db, `rooms/${roomName}/meta`);
+  /* [메타] 마감 저장(한 번) */
   (function saveDeadlineOnce() {
     const mi = JSON.parse(localStorage.getItem('meetingInfo')) || {};
     if (!mi.deadline) return;
-    const deadlinePathRef = firebaseRef(db, `rooms/${roomName}/meta/deadline`);
-    window.firebaseOnValue(deadlinePathRef, (snap) => {
+    const deadlinePathRef = ref(db, `rooms/${roomName}/meta/deadline`);
+    onValue(deadlinePathRef, (snap) => {
       const cur = snap.val();
       if (cur == null) {
         import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js")
@@ -314,9 +393,11 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }, { onlyOnce: true });
   })();
+
+  /* [메타] 마감 감시 → 결과 페이지로 자동 이동 */
   (function watchDeadlineAndRedirect() {
-    const deadlineRef = firebaseRef(db, `rooms/${roomName}/meta/deadline`);
-    window.firebaseOnValue(deadlineRef, (snap) => {
+    const deadlineRef = ref(db, `rooms/${roomName}/meta/deadline`);
+    onValue(deadlineRef, (snap) => {
       const dl = snap.val();
       if (!dl) return;
       if (Date.now() >= dl) {
@@ -325,8 +406,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   })();
 
-  // 실시간 시각화 (기존 유지)
-  firebaseOnValue(availRef, snapshot => {
+  /* [실시간 시각화] 다른 사용자 입력 실시간 반영 */
+  onValue(availRef, snapshot => {
     // 초기화
     document.querySelectorAll('.minute-slot').forEach(slot => {
       slot.classList.remove('busy-definite', 'busy-maybe');
@@ -353,12 +434,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const gStart = toMinutes(group.dataset.start);
         const gEnd = gStart + 30;
 
+        // 이 30분 구간을 덮는지 검사
         const covers = Array.from(group.querySelectorAll('.minute-slot')).some(slot => {
           const t = toMinutes(slot.dataset.time);
           return t >= sMin && t < eMin;
         });
         if (!covers) return;
 
+        // 내부 minute-slot 색 채우기
         group.querySelectorAll('.minute-slot').forEach(slot => {
           const t = toMinutes(slot.dataset.time);
           if (t >= sMin && t < eMin) {
@@ -367,9 +450,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
 
+        // 집계
         if (certainty === 'definite') group.dataset.definite = parseInt(group.dataset.definite, 10) + 1;
         else                          group.dataset.maybe    = parseInt(group.dataset.maybe, 10) + 1;
 
+        // 가시화를 위한 부분 bar 생성
         const overlapStart = Math.max(gStart, sMin);
         const overlapEnd   = Math.min(gEnd, eMin);
         if (overlapEnd > overlapStart) {
@@ -387,21 +472,20 @@ document.addEventListener('DOMContentLoaded', () => {
           bar.style.width = `${width}%`;
           bar.title = `${start}~${end} ${name}`;
 
-          bar.dataset.name = name;          // ★ 추가
-          bar.dataset.certainty = certainty; // ★ 추가   
-
+          // [겹치는 사람 패널에 쓰기 위한 메타]
+          bar.dataset.name = name;
+          bar.dataset.certainty = certainty;
 
           group.appendChild(bar);
 
+          // [유지] 임시 선택 다시 칠하기 + hover 바인딩
           for (const [date] of tempSelection.entries()) repaintDateTemp(date);
-
-          // ★ 새 DOM에도 hover 이벤트 부여
           bindOverlapHover();
         }
       });
     });
 
-    // 강도 단계 최종적용
+    // [마지막] 강도 단계 클래스 적용
     document.querySelectorAll('.slot-group').forEach(group => {
       updateIntensity(
         group,
@@ -410,19 +494,18 @@ document.addEventListener('DOMContentLoaded', () => {
       );
     });
 
-    // 임시 선택 유지(실시간 반영 후 다시 칠하기)
-    // (교체) 임시 선택 유지: 현재 임시선택 중인 모든 날짜 다시 칠하기
+    // [유지] 임시 선택 보정
     for (const [date] of tempSelection.entries()) repaintDateTemp(date);
   });
 
-  // 드롭박스 입력 처리 (확실성은 상단 라디오 사용)
+  /* [폼] 드롭박스 입력 저장 */
   document.getElementById('availabilityForm').addEventListener('submit', e => {
     e.preventDefault();
     const name = (document.getElementById('name').value || '').trim();
     if (!name) { alert('이름을 먼저 입력하세요.'); return; }
 
     const date = document.getElementById('date').value;
-    const certainty = inlineCertainty(); // 라디오
+    const certainty = inlineCertainty();
     const start = `${document.getElementById('startHour').value}:${document.getElementById('startMinute').value}`;
     const end   = `${document.getElementById('endHour').value}:${document.getElementById('endMinute').value}`;
 
@@ -430,13 +513,12 @@ document.addEventListener('DOMContentLoaded', () => {
     e.target.reset();
   });
 
-  // 결과 화면 이동
-  const goBtn = document.getElementById('goResultBtn');
-  if (goBtn) goBtn.addEventListener('click', () => {
+  /* [네비] 결과 화면 이동 */
+  document.getElementById('goResultBtn')?.addEventListener('click', () => {
     window.location.href = `./result.html?room=${encodeURIComponent(roomName)}`;
   });
 
-  // ===== 모드 전환 =====
+  /* [모드 전환] 드롭박스 ↔ 드래그 */
   const segDrop = document.getElementById('segDrop');
   const segDrag = document.getElementById('segDrag');
   const dropdownContent = document.getElementById('dropdownContent');
@@ -453,15 +535,16 @@ document.addEventListener('DOMContentLoaded', () => {
   segDrag?.addEventListener('click', () => setMode('drag'));
   setMode('drop');
 
-  // 시간표 드래그 바인딩 및 버튼
+  /* [드래그 저장/초기화] */
   bindScheduleDrag();
   document.getElementById('dragClear')?.addEventListener('click', clearTempSelection);
   document.getElementById('dragSave')?.addEventListener('click', () => saveTempSelection(availRef));
 
-  // 드롭박스 select 휠 바인딩
-  ['startHour','startMinute','endHour','endMinute'].forEach(id => bindWheelToSelect(document.getElementById(id)));
+  /* [UX] select에 휠 바인딩 */
+  ['startHour','startMinute','endHour','endMinute']
+    .forEach(id => bindWheelToSelect(document.getElementById(id)));
 
-  // 라디오 변경 시 select 확실성 동기화
+  /* [보조] 라디오 변경 → (예전 코드 호환용) select 확실성 동기화 */
   document.querySelectorAll('input[name="inlineCertainty"]').forEach(r => {
     r.addEventListener('change', () => {
       const sel = document.getElementById('certainty');
@@ -470,15 +553,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ===================== 페이지 타이틀 =====================
-window.addEventListener('DOMContentLoaded', () => {
-  const info = JSON.parse(localStorage.getItem('meetingInfo'));
-  const title = document.getElementById('meeting-title');
-  if (info && info.name) title.textContent = info.name;
-});
-
-
-// ===== 겹치는 사람 패널 =====
+/* -----------------------------------------
+ * 8) 겹치는 사람 패널
+ * ----------------------------------------- */
 let panelEl, panelTime, listSure, listMaybe;
 function initOverlapPanel(){
   panelEl   = document.getElementById('overlap-panel');
@@ -487,6 +564,7 @@ function initOverlapPanel(){
   listMaybe = document.getElementById('op-list-maybe') || null;
 }
 
+/** 특정 슬록 그룹에 마우스 올렸을 때 패널 갱신 */
 function showOverlapForGroup(groupEl){
   if (!panelEl) { initOverlapPanel(); }
   if (!panelEl) return;
@@ -497,7 +575,7 @@ function showOverlapForGroup(groupEl){
   const sure  = new Set();
   const maybe = new Set();
 
-  // 1) availability-bar에서 수집
+  // [1] availability-bar 기반 수집(정확)
   groupEl.querySelectorAll('.availability-bar').forEach(bar=>{
     const nm = (bar.dataset.name || '').trim();
     const ct = bar.dataset.certainty;
@@ -505,13 +583,12 @@ function showOverlapForGroup(groupEl){
     (ct === 'definite' ? sure : maybe).add(nm);
   });
 
-  // 2) fallback: minute-slot tooltip 파싱
+  // [2] 보조: minute-slot의 tooltip 파싱
   if (sure.size === 0 && maybe.size === 0) {
     groupEl.querySelectorAll('.minute-slot').forEach(ms=>{
       const names = (ms.dataset.tooltip || '').split(',').map(s=>s.trim()).filter(Boolean);
       if (!names.length) return;
       const isDef = ms.classList.contains('busy-definite');
-      (isDef ? sure : maybe).forEach?.(() => {}); // no-op to keep symmetry
       names.forEach(n => (isDef ? sure : maybe).add(n));
     });
   }
@@ -521,10 +598,10 @@ function showOverlapForGroup(groupEl){
   if (listMaybe) listMaybe.innerHTML   = maybe.size ? [...maybe].sort().map(n=>`<li>${n}</li>`).join('') : '<li>없음</li>';
 }
 
+/** 새로 생성되는 슬롯그룹에도 hover 바인딩 */
 function bindOverlapHover(){
   const groups = document.querySelectorAll('.day-column .slot-group');
   groups.forEach(g=>{
-    // 중복 바인딩 방지
     if (!g.dataset._opBound) {
       g.addEventListener('mouseenter', ()=> showOverlapForGroup(g));
       g.addEventListener('click',      ()=> showOverlapForGroup(g));
@@ -532,5 +609,4 @@ function bindOverlapHover(){
     }
   });
 }
-// DOM 준비되면 패널 참조 한번 초기화
 document.addEventListener('DOMContentLoaded', initOverlapPanel);

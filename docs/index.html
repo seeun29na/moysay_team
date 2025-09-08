@@ -21,24 +21,132 @@
       display: none; width: 90vw; max-width: 1000px; margin: 2rem auto;
     }
     .title-bar {
-      background: #bca369; color: white; padding: 1rem; border-radius: 8px;
+      background: white; color: #52482e42; padding: 1rem; border-radius: 8px;
       font-size: 1.5rem; text-align: center; margin-bottom: 1rem;
     }
-    #calendar { background: #d2bb87; border-radius: 8px; padding: 1rem; height: 600px; }
+    #calendar { background: #fcfbfa; border-radius: 8px; padding: 1rem; height: 600px; }
     .fc .fc-toolbar-title { font-size: 1.5rem; }
     .fc button { background: #bca369; color: white; border: none; border-radius: 4px; }
     .fc-daygrid-day.fc-past { opacity: 0.3; pointer-events: none; }
-    .fc-daygrid-day-selected { background: #ff7f50 !important; color: white !important; }
+    .fc-daygrid-day-selected { background: #52482e42 !important; color: white !important; }
     #nextBtn { display: block; margin: 1.5rem auto 0; padding: .8rem 2rem;
-      background: #bca369; color: white; border: none; border-radius: 8px;
+      background: white; color: #bca36994; border: none; border-radius: 8px;
       font-size: 1rem; cursor: pointer;
     }
+
+        /* ── 제목/버튼 가독성 강화 ───────────────────────── */
+    .title-bar {
+      color: #3b331e;           /* 더 진한 색 */
+      font-weight: 700;         /* 굵게 */
+      letter-spacing: .2px;
+    }
+    #nextBtn {
+      color: #8a6a22;           /* 더 진하게 */
+      font-weight: 700;
+      border: 1px solid #d8c794;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+    }
+
+    /* ── 캘린더 카드 느낌 & 전체 톤 통일 ─────────────── */
+    #calendar {
+      background: #fffdfa;      /* 미세하게 아이보리 */
+      border-radius: 12px;
+      padding: 0.5rem;          /* FullCalendar 자체 패딩과 중첩 방지 */
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+      border: 1px solid #e9ddb5;
+    }
+
+    /* ── 툴바/제목 영역 개선 ─────────────────────────── */
+    .fc .fc-toolbar-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #3b331e;
+    }
+    .fc .fc-button {
+      background: #bca369;
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      padding: .45rem .9rem;
+    }
+    .fc .fc-button-primary:not(:disabled):hover {
+      filter: brightness(0.92);
+    }
+
+    /* ── 요일 헤더(달력 상단 줄) 달력답게 ────────────── */
+    .fc .fc-col-header {
+      background: #fff7e0;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+    }
+    .fc .fc-col-header-cell-cushion {
+      color: #4b3f22;
+      font-weight: 800;
+      padding: .8rem 0;
+      text-transform: none;
+    }
+
+    /* ── 그리드 선 두껍게 & 색 조정 (달력 느낌) ─────── */
+    .fc-theme-standard td,
+    .fc-theme-standard th {
+      border-color: #d9cda4 !important; /* 달력 종이색과 어울리는 금빛 베이지 */
+      border-width: 1.5px !important;   /* 기존보다 두껍게 */
+    }
+
+    /* ── 날짜 숫자 가독성 + 주말 색상 ───────────────── */
+    .fc .fc-daygrid-day-number {
+      color: #4b3f22;
+      font-weight: 700;
+      padding: .35rem .5rem; /* 클릭 영역 확보 */
+      border-radius: 6px;
+    }
+    .fc .fc-day-sun .fc-daygrid-day-number { color: #b6423a; } /* 일요일 */
+    .fc .fc-day-sat .fc-daygrid-day-number { color: #2b66a3; } /* 토요일 */
+
+    /* ── 오늘 표시: 배지 느낌으로 또렷하게 ─────────── */
+    .fc .fc-day-today {
+      background: #fff3c2 !important;
+    }
+    .fc .fc-day-today .fc-daygrid-day-number {
+      background: #bca369;
+      color: #fff;
+      border-radius: 999px;
+      padding: .15rem .55rem;
+    }
+
+    /* ── 호버/선택 상태 (직관적으로) ────────────────── */
+    .fc .fc-daygrid-day:hover {
+      background: #f7f0d6;
+    }
+    .fc-daygrid-day-selected,
+    .fc .fc-daygrid-day.fc-daygrid-day-selected .fc-daygrid-day-frame {
+      background: #dfc589 !important;
+      color: #fff !important;
+    }
+    .fc-daygrid-day-selected .fc-daygrid-day-number {
+      background: transparent;
+      color: #fff;
+    }
+
+    /* ── 지난 날짜 흐림 유지(기존 로직 보강) ─────────── */
+    .fc .fc-daygrid-day.fc-past {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    /* ── 셀 내부 간격/모서리 정돈 ───────────────────── */
+    .fc .fc-daygrid-day-frame {
+      padding: .35rem;
+      border-radius: 8px;
+    }
+
   </style>
 </head>
 <body>
   <!-- Splash Screen -->
   <div id="splash">
-    <img src="moysay_logo_circle.png" alt="Moysay Logo" />
+    <img src="moysay_logo.png" alt="Moysay Logo" />
   </div>
 
   <!-- Calendar Container -->
