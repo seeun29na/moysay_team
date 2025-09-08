@@ -332,3 +332,17 @@ header h1 {
 @media (min-width: 1200px){
   .overlap-panel{ top: 16rem; }  /* 필요 시 */
 }
+
+.ad-banner {
+  position: fixed;       /* 항상 화면 하단에 고정 */
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #f1e0b5; /* 사이트 배경과 어울리게 */
+  border-top: 2px solid #a7904d;
+  text-align: center;
+  padding: 0.8rem;
+  font-size: 1rem;
+  color: #333;
+  z-index: 999;
+}
