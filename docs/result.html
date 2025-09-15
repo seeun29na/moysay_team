@@ -296,7 +296,22 @@
 
   <!-- 광고 배너 자리 -->
   <div class="ad-banner">
-    <p>📢 광고 영역 (이곳에 광고가 들어갑니다)</p>
+    <!-- 쿠팡 파트너스 광고 (JS 방식) -->
+    <script src="https://ads-partners.coupang.com/g.js"></script>
+    <script>
+      new PartnersCoupang.G({
+        "id": 922301,
+        "template": "banner",
+        "trackingCode": "AF5822624",
+        "width": "468",
+        "height": "60"
+      });
+    </script>
+
+    <!-- 공정위 고지 문구 -->
+    <p style="font-size:0.5rem; color:#666; margin-top:0.1rem;">
+      이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+    </p>
   </div>
 
 </body>
